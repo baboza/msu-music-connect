@@ -1,0 +1,9 @@
+{
+  "appId": "th.ac.msu.music.eoffice",
+  "appName": "MSU Music Connect",
+  "webDir": "www",
+  "server": {
+    "url": "https://music.msu.ac.th/music-e-office/mobile/",
+    "cleartext": true
+  }
+}
