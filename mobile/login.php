@@ -458,6 +458,12 @@ $base_url = "/music-e-office";
             </div>
         </div>
 
+        <div class="text-center mt-3">
+            <a href="../auth/login.php?pc=1" class="switch-pc-link">
+                <i class="fa-solid fa-desktop"></i> เข้าใช้งานเวอร์ชัน PC (Desktop)
+            </a>
+        </div>
+
         <div class="mobile-login-footer">
             <div>พบปัญหาการเข้าใช้งาน กรุณาติดต่อ <strong>งานเทคโนโลยีสารสนเทศ</strong><br>วิทยาลัยดุริยางคศิลป์ มหาวิทยาลัยมหาสารคาม</div>
         </div>

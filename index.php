@@ -17,15 +17,23 @@ require_once 'config/db.php';
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
 
-if (isset($_GET['pc']) || !$is_real_mobile) {
-    // บน PC หรือมีการระบุ ?pc ให้ใช้ Desktop เสมอ และล้าง Cookie mobile
+if (isset($_GET['pc'])) {
+    // ผู้ใช้ต้องการเข้าใช้งาน PC Desktop
     $_SESSION['prefer_desktop'] = true;
     $_SESSION['app_mode'] = 'desktop';
     setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
 } elseif (isset($_GET['mobile'])) {
+    // ผู้ใช้ต้องการสลับไป Mobile App
     $_SESSION['prefer_desktop'] = false;
     $_SESSION['app_mode'] = 'mobile';
     setcookie('app_mode', 'mobile', time() + 86400 * 30, '/');
+    header("Location: mobile/index.php?mobile=1");
+    exit();
+} elseif (!$is_real_mobile) {
+    // หากเข้าจากเครื่องคอมพิวเตอร์ PC ให้อยู่หน้า Desktop เสมอ
+    $_SESSION['prefer_desktop'] = true;
+    $_SESSION['app_mode'] = 'desktop';
+    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
 }
 
 // สลับไปหน้า Mobile อัตโนมัติ เฉพาะเมื่อเป็นอุปกรณ์มือถือจริงๆ (ไม่ใช่ Desktop PC)

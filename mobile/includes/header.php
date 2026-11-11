@@ -156,6 +156,11 @@ if (isset($pdo)) {
                             <i class="fa-solid fa-sliders me-2 text-purple"></i> ตั้งค่าการใช้งาน
                         </a>
                     </li>
+                    <li>
+                        <a class="dropdown-item rounded-2 py-2 small fw-semibold text-primary" href="../index.php?pc=1" hx-disable>
+                            <i class="fa-solid fa-desktop me-2 text-primary"></i> สลับไปเวอร์ชัน PC (Desktop)
+                        </a>
+                    </li>
 
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>

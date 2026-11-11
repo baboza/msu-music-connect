@@ -325,11 +325,17 @@ $can_view_admin_section    = hasRole(['admin']);
             <?php endif; ?>
 
             <!-- ปุ่มเปิด App Center (รวมทุกระบบงานของคณะ) -->
-            <div class="px-3 mb-3 mt-1">
+            <div class="px-3 mb-2 mt-1">
                 <button type="button" class="btn btn-app-center w-100 py-2 fw-bold d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#appCenterModal">
                     <span class="d-flex align-items-center gap-2"><i class="fa-solid fa-grip"></i> ระบบงานทั้งหมด (App Center)</span>
                     <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem;"></i>
                 </button>
+            </div>
+            <!-- ปุ่มสลับไปเวอร์ชัน Mobile -->
+            <div class="px-3 mb-3">
+                <a href="<?php echo $base_url; ?>/mobile/index.php?mobile=1" class="btn btn-outline-primary w-100 py-1.5 fw-bold d-flex align-items-center justify-content-center gap-2" style="font-size: 0.8rem; border-radius: 8px;">
+                    <i class="fa-solid fa-mobile-screen"></i> สลับไปเวอร์ชัน Mobile
+                </a>
             </div>
         </div>
 

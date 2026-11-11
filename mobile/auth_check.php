@@ -3,6 +3,23 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// -------------------------------------------------------------
+// สลับโหมดการแสดงผล (View Switcher: PC Desktop vs Mobile App)
+// -------------------------------------------------------------
+if (isset($_GET['pc'])) {
+    $_SESSION['prefer_desktop'] = true;
+    $_SESSION['app_mode'] = 'desktop';
+    setcookie('app_mode', 'desktop', time() + (86400 * 30), '/');
+    header("Location: ../index.php?pc=1");
+    exit();
+}
+
+if (isset($_GET['mobile'])) {
+    $_SESSION['prefer_desktop'] = false;
+    $_SESSION['app_mode'] = 'mobile';
+    setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
+}
+
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['error'] = "กรุณาเข้าสู่ระบบก่อนใช้งาน";
     header("Location: login.php");

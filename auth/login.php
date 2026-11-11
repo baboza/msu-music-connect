@@ -14,7 +14,17 @@ if (session_status() === PHP_SESSION_NONE) {
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
 
-if (isset($_GET['pc']) || !$is_real_mobile) {
+if (isset($_GET['pc'])) {
+    $_SESSION['prefer_desktop'] = true;
+    $_SESSION['app_mode'] = 'desktop';
+    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
+} elseif (isset($_GET['mobile'])) {
+    $_SESSION['prefer_desktop'] = false;
+    $_SESSION['app_mode'] = 'mobile';
+    setcookie('app_mode', 'mobile', time() + 86400 * 30, '/');
+    header("Location: ../mobile/login.php?mobile=1");
+    exit();
+} elseif (!$is_real_mobile) {
     $_SESSION['prefer_desktop'] = true;
     $_SESSION['app_mode'] = 'desktop';
     setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
@@ -783,7 +793,7 @@ $base_url = "/music-e-office";
             </div>
 
             <div class="text-center mb-3">
-                    <a href="../mobile/login.php" class="btn btn-sm btn-outline-purple rounded-pill px-3 py-1 extra-small fw-bold" style="border-color: rgba(57, 4, 143, 0.3); color: #39048f; background: rgba(57, 4, 143, 0.04); text-decoration: none;">
+                    <a href="../mobile/login.php?mobile=1" class="btn btn-sm btn-outline-purple rounded-pill px-3 py-1 extra-small fw-bold" style="border-color: rgba(57, 4, 143, 0.3); color: #39048f; background: rgba(57, 4, 143, 0.04); text-decoration: none;">
                         <i class="fa-solid fa-mobile-screen-button me-1"></i> เข้าสู่ระบบฉบับ Mobile (Music MSU Connect)
                     </a>
                 </div>

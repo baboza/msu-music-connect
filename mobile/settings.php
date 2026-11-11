@@ -55,6 +55,26 @@ require_once 'includes/header.php';
         </ul>
     </div>
 
+    <h6 class="fw-bold mb-2 text-muted px-2 small text-uppercase">โหมดการแสดงผล (Display Mode)</h6>
+    <div class="bento-box p-0 mb-4 overflow-hidden">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-0">
+                <div class="d-flex align-items-center">
+                    <div class="app-icon-container me-3" style="width: 38px; height: 38px; font-size: 1rem; background: rgba(57, 4, 143, 0.08); color: var(--primary);">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">สลับไปเวอร์ชัน PC Desktop</h6>
+                        <small class="text-muted">เปิดมุมมองหน้าจอคอมพิวเตอร์เต็มรูปแบบ</small>
+                    </div>
+                </div>
+                <a href="../index.php?pc=1" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold" hx-disable>
+                    สลับหน้าจอ <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </li>
+        </ul>
+    </div>
+
     <h6 class="fw-bold mb-2 text-muted px-2 small text-uppercase">ข้อมูลระบบ (System)</h6>
     <div class="bento-box p-0 mb-4 overflow-hidden">
         <ul class="list-group list-group-flush">

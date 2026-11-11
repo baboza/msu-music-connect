@@ -447,6 +447,11 @@ body {
                                     <i class="fa-solid fa-sliders me-2 text-purple"></i> ตั้งค่าการใช้งาน
                                 </a>
                             </li>
+                            <li>
+                                <a class="dropdown-item rounded-2 py-2 small fw-semibold text-primary" href="../index.php?pc=1" hx-disable>
+                                    <i class="fa-solid fa-desktop me-2 text-primary"></i> สลับไปเวอร์ชัน PC (Desktop)
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider my-1"></li>
                             <li>
                                 <a class="dropdown-item rounded-2 py-2 small fw-bold text-danger" href="../auth/logout.php?from=mobile" hx-disable>
@@ -815,6 +820,12 @@ body {
         </button>
     </div>
 
+    <!-- Switch to Desktop PC View Option -->
+    <div class="text-center my-3 pb-1">
+        <a href="../index.php?pc=1" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 extra-small fw-semibold shadow-none border" style="background: rgba(255,255,255,0.7); color: #475569;" hx-disable>
+            <i class="fa-solid fa-desktop me-2 text-primary"></i> สลับไปเวอร์ชัน PC (Desktop)
+        </a>
+    </div>
     <!-- Floating Action Button (Quick Daily Report) -->
     <a href="worklog_form.php" class="mobile-fab" title="เขียนบันทึกงานใหม่" hx-boost="true">
         <i class="fa-solid fa-plus"></i>

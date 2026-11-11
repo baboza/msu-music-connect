@@ -742,6 +742,7 @@ if (!function_exists('isCenterActive')) {
                 <?php if(isset($modules['module_cv']) && $modules['module_cv']): ?>
                 <li><a class="dropdown-item" href="<?php echo $base_url; ?>/modules/cv/index.php"><div class="dropdown-item-icon"><i class="fa-solid fa-file-invoice"></i></div> ประวัติและผลงาน (CV)</a></li>
                 <?php endif; ?>
+                <li><a class="dropdown-item text-primary fw-semibold" href="<?php echo $base_url; ?>/mobile/index.php?mobile=1"><div class="dropdown-item-icon bg-primary-subtle text-primary"><i class="fa-solid fa-mobile-screen"></i></div> สลับไปเวอร์ชัน Mobile</a></li>
                 <li><hr class="dropdown-divider border-light my-1"></li>
                 <li><a class="dropdown-item text-danger fw-bold" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#logoutModal"><div class="dropdown-item-icon bg-danger-subtle"><i class="fa-solid fa-power-off text-danger"></i></div> ออกจากระบบ</a></li>
             </ul>
