@@ -3,17 +3,16 @@ $current_page = basename($_SERVER['PHP_SELF'] ?? '');
 $current_script = basename($_SERVER['SCRIPT_NAME'] ?? '');
 $is_home_page = in_array($current_page, ['index.php', 'mobile', '']) || in_array($current_script, ['index.php']);
 
-// คำนวณยอดรออนุมัติรวมสำหรับ Badge กระดิ่งแจ้งเตือน
+// คำนวณยอดรออนุมัติเฉพาะรายการที่ผู้ใช้มีสิทธิ์พิจารณา (ตาม requests_list.php)
 $mobile_pending_badge = 0;
-if (isset($pdo)) {
-    try {
-        $cnt_l = (int)$pdo->query("SELECT COUNT(*) FROM leave_requests WHERE status = 'pending'")->fetchColumn();
-        $cnt_r = (int)$pdo->query("SELECT COUNT(*) FROM room_bookings WHERE status = 'pending'")->fetchColumn();
-        $cnt_rp = (int)$pdo->query("SELECT COUNT(*) FROM repair_requests WHERE status = 'pending'")->fetchColumn();
-        $cnt_s = (int)$pdo->query("SELECT COUNT(*) FROM supplies_requests WHERE head_status = 'pending' OR supply_status = 'pending'")->fetchColumn();
-        $cnt_c = (int)$pdo->query("SELECT COUNT(*) FROM course_requests WHERE status LIKE 'pending%'")->fetchColumn();
-        $mobile_pending_badge = $cnt_l + $cnt_r + $cnt_rp + $cnt_s + $cnt_c;
-    } catch(Exception $e) {}
+if (isset($pdo) && isset($_SESSION['user_id'])) {
+    require_once __DIR__ . '/approval_functions.php';
+    $u_roles = $_SESSION['roles'] ?? [];
+    if (empty($u_roles) && isset($_SESSION['role'])) {
+        $u_roles = [$_SESSION['role']];
+    }
+    $badge_counts = getMobileApprovalCounts($pdo, $_SESSION['user_id'], $u_roles);
+    $mobile_pending_badge = $badge_counts['total'];
 }
 ?>
 <!DOCTYPE html>

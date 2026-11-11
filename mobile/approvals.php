@@ -15,67 +15,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     }
 }
 
-$pending_leaves = [];
-$pending_rooms = [];
-$pending_repairs = [];
-$pending_supplies = [];
-$pending_klof = [];
-$pending_course_requests = [];
+require_once __DIR__ . '/includes/approval_functions.php';
 
-try {
-    // 1. ลางาน (leave_requests)
-    $stmt = $pdo->query("SELECT l.*, t.type_name, u.first_name, u.last_name 
-                         FROM leave_requests l 
-                         JOIN leave_types t ON l.type_id = t.type_id 
-                         JOIN users u ON l.user_id = u.user_id 
-                         WHERE l.status = 'pending' 
-                         ORDER BY l.created_at DESC");
-    $pending_leaves = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$user_roles_array = $_SESSION['roles'] ?? [];
+if (empty($user_roles_array) && isset($_SESSION['role'])) {
+    $user_roles_array = [$_SESSION['role']];
+}
 
-    // 2. คำร้องวิชาการนิสิต (course_requests)
-    $stmt = $pdo->query("SELECT cr.*, u.first_name, u.last_name, u.prefix_name 
-                         FROM course_requests cr 
-                         LEFT JOIN users u ON cr.student_id = u.user_id 
-                         WHERE cr.status LIKE 'pending%' 
-                         ORDER BY cr.created_at DESC");
-    $pending_course_requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ดึงรายการรออนุมัติเฉพาะส่วนที่ผู้ใช้งานมีสิทธิ์พิจารณาจริง อิงตาม requests_list.php
+$approval_data = getMobileApprovalData($pdo, $user_id, $user_roles_array);
+$pending_leaves = $approval_data['leaves'];
+$pending_course_requests = $approval_data['courses'];
+$pending_supplies = $approval_data['supplies'];
+$pending_rooms = $approval_data['rooms'];
+$pending_repairs = $approval_data['repairs'];
+$pending_klof = $approval_data['klof'];
+$total_pending = $approval_data['total'];
 
-    // 3. จองห้อง (room_bookings)
-    $stmt = $pdo->query("SELECT b.*, r.room_name, u.first_name, u.last_name 
-                         FROM room_bookings b 
-                         JOIN rooms r ON b.room_id = r.room_id 
-                         JOIN users u ON b.user_id = u.user_id 
-                         WHERE b.status = 'pending' 
-                         ORDER BY b.created_at DESC");
-    $pending_rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 4. แจ้งซ่อม (repair_requests)
-    $stmt = $pdo->query("SELECT rr.*, r.room_name, u.first_name, u.last_name 
-                         FROM repair_requests rr 
-                         LEFT JOIN rooms r ON rr.room_id = r.room_id 
-                         LEFT JOIN users u ON rr.reporter_id = u.user_id 
-                         WHERE rr.status = 'pending' 
-                         ORDER BY rr.created_at DESC");
-    $pending_repairs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 5. เบิกพัสดุ (supplies_requests)
-    $stmt = $pdo->query("SELECT sr.*, u.first_name, u.last_name 
-                         FROM supplies_requests sr 
-                         JOIN users u ON sr.user_id = u.user_id 
-                         WHERE sr.head_status = 'pending' OR sr.supply_status = 'pending' 
-                         ORDER BY sr.request_date DESC");
-    $pending_supplies = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 6. กยศ./จิตอาสา (student_klof_logs)
-    $stmt = $pdo->query("SELECT l.*, s.first_name, s.last_name 
-                         FROM student_klof_logs l 
-                         JOIN students s ON l.student_id = s.student_id 
-                         WHERE l.status = 'pending' 
-                         ORDER BY l.created_at DESC");
-    $pending_klof = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch(Exception $e) {}
-
-$total_pending = count($pending_leaves) + count($pending_course_requests) + count($pending_rooms) + count($pending_repairs) + count($pending_supplies) + count($pending_klof);
+// เลือกแท็บเริ่มต้นให้ตรงกับหมวดหมู่ที่มีรายการค้างจริง
+$default_tab = 'leave';
+if (empty($pending_leaves)) {
+    if (!empty($pending_course_requests)) $default_tab = 'academic';
+    elseif (!empty($pending_supplies)) $default_tab = 'supply';
+    elseif (!empty($pending_rooms)) $default_tab = 'room';
+    elseif (!empty($pending_repairs)) $default_tab = 'repair';
+    elseif (!empty($pending_klof)) $default_tab = 'klof';
+}
 
 // Mapping คำร้องวิชาการ
 function getCourseStepBadge($status) {
@@ -104,34 +69,34 @@ function getCourseStepBadge($status) {
 
     <!-- Scrollable Segmented Filter Pills -->
     <div class="d-flex align-items-center gap-1 mb-3 pb-1" style="overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-        <button class="btn btn-sm rounded-pill fw-bold active exec-tab-pill" id="tab-btn-leave" onclick="showApprovalTab('leave')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'leave' ? 'active' : 'text-secondary' ?>" id="tab-btn-leave" onclick="showApprovalTab('leave')">
             <i class="fa-solid fa-calendar-minus me-1"></i>ใบลา 
             <span class="badge bg-danger rounded-pill ms-1"><?= count($pending_leaves) ?></span>
         </button>
-        <button class="btn btn-sm rounded-pill fw-bold text-secondary exec-tab-pill" id="tab-btn-academic" onclick="showApprovalTab('academic')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'academic' ? 'active' : 'text-secondary' ?>" id="tab-btn-academic" onclick="showApprovalTab('academic')">
             <i class="fa-solid fa-graduation-cap me-1"></i>วิชาการ 
             <span class="badge bg-purple rounded-pill ms-1" style="background-color: var(--primary) !important;"><?= count($pending_course_requests) ?></span>
         </button>
-        <button class="btn btn-sm rounded-pill fw-bold text-secondary exec-tab-pill" id="tab-btn-supply" onclick="showApprovalTab('supply')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'supply' ? 'active' : 'text-secondary' ?>" id="tab-btn-supply" onclick="showApprovalTab('supply')">
             <i class="fa-solid fa-box-open me-1"></i>พัสดุ 
             <span class="badge bg-info text-dark rounded-pill ms-1"><?= count($pending_supplies) ?></span>
         </button>
-        <button class="btn btn-sm rounded-pill fw-bold text-secondary exec-tab-pill" id="tab-btn-room" onclick="showApprovalTab('room')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'room' ? 'active' : 'text-secondary' ?>" id="tab-btn-room" onclick="showApprovalTab('room')">
             <i class="fa-solid fa-door-open me-1"></i>จองห้อง 
             <span class="badge bg-success rounded-pill ms-1"><?= count($pending_rooms) ?></span>
         </button>
-        <button class="btn btn-sm rounded-pill fw-bold text-secondary exec-tab-pill" id="tab-btn-repair" onclick="showApprovalTab('repair')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'repair' ? 'active' : 'text-secondary' ?>" id="tab-btn-repair" onclick="showApprovalTab('repair')">
             <i class="fa-solid fa-screwdriver-wrench me-1"></i>แจ้งซ่อม 
             <span class="badge bg-warning text-dark rounded-pill ms-1"><?= count($pending_repairs) ?></span>
         </button>
-        <button class="btn btn-sm rounded-pill fw-bold text-secondary exec-tab-pill" id="tab-btn-klof" onclick="showApprovalTab('klof')">
+        <button class="btn btn-sm rounded-pill fw-bold exec-tab-pill <?= $default_tab === 'klof' ? 'active' : 'text-secondary' ?>" id="tab-btn-klof" onclick="showApprovalTab('klof')">
             <i class="fa-solid fa-hands-holding-child me-1"></i>กยศ. 
             <span class="badge bg-secondary rounded-pill ms-1"><?= count($pending_klof) ?></span>
         </button>
     </div>
 
     <!-- TAB 1: ใบลา -->
-    <div id="pane-leave" class="approval-pane">
+    <div id="pane-leave" class="approval-pane <?= $default_tab === 'leave' ? '' : 'd-none' ?>">
         <?php if(empty($pending_leaves)): ?>
             <div class="text-center py-5 bento-card opacity-75">
                 <i class="fa-solid fa-calendar-check fa-3x text-muted mb-3 opacity-50"></i>
@@ -157,7 +122,7 @@ function getCourseStepBadge($status) {
     </div>
 
     <!-- TAB 2: คำร้องวิชาการนิสิต -->
-    <div id="pane-academic" class="approval-pane d-none">
+    <div id="pane-academic" class="approval-pane <?= $default_tab === 'academic' ? '' : 'd-none' ?>">
         <?php if(empty($pending_course_requests)): ?>
             <div class="text-center py-5 bento-card opacity-75">
                 <i class="fa-solid fa-graduation-cap fa-3x text-muted mb-3 opacity-50"></i>
@@ -202,7 +167,7 @@ function getCourseStepBadge($status) {
     </div>
 
     <!-- TAB 3: เบิกพัสดุ -->
-    <div id="pane-supply" class="approval-pane d-none">
+    <div id="pane-supply" class="approval-pane <?= $default_tab === 'supply' ? '' : 'd-none' ?>">
         <?php if(empty($pending_supplies)): ?>
             <div class="text-center py-5 bento-box opacity-75">
                 <i class="fa-solid fa-box-open fa-3x text-muted mb-3 opacity-50"></i>
@@ -228,7 +193,7 @@ function getCourseStepBadge($status) {
     </div>
 
     <!-- TAB 4: จองห้อง -->
-    <div id="pane-room" class="approval-pane d-none">
+    <div id="pane-room" class="approval-pane <?= $default_tab === 'room' ? '' : 'd-none' ?>">
         <?php if(empty($pending_rooms)): ?>
             <div class="text-center py-5 bento-box opacity-75">
                 <i class="fa-solid fa-door-open fa-3x text-muted mb-3 opacity-50"></i>
@@ -254,7 +219,7 @@ function getCourseStepBadge($status) {
     </div>
 
     <!-- TAB 5: แจ้งซ่อม -->
-    <div id="pane-repair" class="approval-pane d-none">
+    <div id="pane-repair" class="approval-pane <?= $default_tab === 'repair' ? '' : 'd-none' ?>">
         <?php if(empty($pending_repairs)): ?>
             <div class="text-center py-5 bento-box opacity-75">
                 <i class="fa-solid fa-screwdriver-wrench fa-3x text-muted mb-3 opacity-50"></i>
@@ -280,7 +245,7 @@ function getCourseStepBadge($status) {
     </div>
 
     <!-- TAB 6: กยศ. / จิตอาสา -->
-    <div id="pane-klof" class="approval-pane d-none">
+    <div id="pane-klof" class="approval-pane <?= $default_tab === 'klof' ? '' : 'd-none' ?>">
         <?php if(empty($pending_klof)): ?>
             <div class="text-center py-5 bento-box opacity-75">
                 <i class="fa-solid fa-hands-holding-child fa-3x text-muted mb-3 opacity-50"></i>
@@ -353,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hash && ['leave', 'academic', 'supply', 'room', 'repair', 'klof'].includes(hash)) {
         showApprovalTab(hash);
     } else {
-        showApprovalTab('leave');
+        showApprovalTab('<?= $default_tab ?>');
     }
 });
 </script>

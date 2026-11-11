@@ -36,32 +36,23 @@ try {
 } catch(Exception $e) {}
 
 // -------------------------------------------------------------
-// 3. ดึงยอดงานรออนุมัติทุกส่วนงาน (Universal Approvals)
+// 3. ดึงยอดงานรออนุมัติเฉพาะส่วนที่ผู้ใช้มีสิทธิ์พิจารณา (ตาม requests_list.php)
 // -------------------------------------------------------------
-$leave_pending = 0;
-$room_pending = 0;
-$repair_pending = 0;
-$supply_pending = 0;
-$course_pending = 0;
+require_once __DIR__ . '/includes/approval_functions.php';
 
-try {
-    $stmt_l = $pdo->query("SELECT COUNT(*) FROM leave_requests WHERE status = 'pending'");
-    $leave_pending = (int)$stmt_l->fetchColumn();
+$app_roles = $_SESSION['roles'] ?? [];
+if (empty($app_roles) && isset($_SESSION['role'])) {
+    $app_roles = [$_SESSION['role']];
+}
 
-    $stmt_r = $pdo->query("SELECT COUNT(*) FROM room_bookings WHERE status = 'pending'");
-    $room_pending = (int)$stmt_r->fetchColumn();
-
-    $stmt_rp = $pdo->query("SELECT COUNT(*) FROM repair_requests WHERE status = 'pending'");
-    $repair_pending = (int)$stmt_rp->fetchColumn();
-
-    $stmt_s = $pdo->query("SELECT COUNT(*) FROM supplies_requests WHERE head_status = 'pending' OR supply_status = 'pending'");
-    $supply_pending = (int)$stmt_s->fetchColumn();
-
-    $stmt_c = $pdo->query("SELECT COUNT(*) FROM course_requests WHERE status LIKE 'pending%'");
-    $course_pending = (int)$stmt_c->fetchColumn();
-} catch(Exception $e) {}
-
-$total_pending = $leave_pending + $room_pending + $repair_pending + $supply_pending + $course_pending;
+$approval_counts = getMobileApprovalCounts($pdo, $user_id, $app_roles);
+$leave_pending = $approval_counts['leave'];
+$room_pending = $approval_counts['room'];
+$repair_pending = $approval_counts['repair'];
+$supply_pending = $approval_counts['supply'];
+$course_pending = $approval_counts['academic'];
+$klof_pending = $approval_counts['klof'];
+$total_pending = $approval_counts['total'];
 
 // -------------------------------------------------------------
 // 4. ดึงสิทธิ์และสถานะการลาล่าสุดของผู้ใช้งาน
