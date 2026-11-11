@@ -14,35 +14,25 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ตรวจจับว่าเป็นอุปกรณ์พกพาจริงหรือไม่ (ไม่ใช้ Cookie เก่ามาตัดสินแทน PC)
-$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+// เมื่อเข้าใช้งานหน้า auth/login.php ให้ตั้งค่าเป็น PC Desktop เสมอ (ไม่เด้งไป mobile)
+$_SESSION['login_target'] = 'pc';
+$_SESSION['prefer_desktop'] = true;
+$_SESSION['app_mode'] = 'desktop';
+setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
 
-if (isset($_GET['pc'])) {
-    $_SESSION['prefer_desktop'] = true;
-    $_SESSION['app_mode'] = 'desktop';
-    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
-} elseif (isset($_GET['mobile'])) {
+// หากผู้ใช้จงใจคลิกสลับไปหน้า Mobile Login ผ่านลิงก์ (?mobile=1)
+if (isset($_GET['mobile'])) {
+    $_SESSION['login_target'] = 'mobile';
     $_SESSION['prefer_desktop'] = false;
     $_SESSION['app_mode'] = 'mobile';
     setcookie('app_mode', 'mobile', time() + 86400 * 30, '/');
     header("Location: ../mobile/login.php?mobile=1");
     exit();
-} elseif (!$is_real_mobile) {
-    $_SESSION['prefer_desktop'] = true;
-    $_SESSION['app_mode'] = 'desktop';
-    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
 }
 
-// หากเข้าจากมือถือจริงๆ และไม่ได้เลือก PC ให้สลับไปหน้า Mobile Login อัตโนมัติ
-if ($is_real_mobile && !isset($_GET['pc']) && empty($_SESSION['prefer_desktop'])) {
-    header("Location: ../mobile/login.php");
-    exit();
-}
-
-// หากล็อกอินอยู่แล้ว ให้ไปหน้าแรกตามอุปกรณ์
+// หากล็อกอินอยู่แล้ว ให้เข้าสู่ระบบหน้า PC Desktop ทันที
 if (isset($_SESSION['user_id'])) {
-    header("Location: " . ($is_real_mobile && empty($_SESSION['prefer_desktop']) ? "../mobile/index.php" : "../index.php"));
+    header("Location: ../index.php");
     exit();
 }
 
@@ -59,7 +49,8 @@ $google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_
     'response_type' => 'code',
     'scope' => 'email profile',
     'access_type' => 'online',
-    'prompt' => 'select_account'
+    'prompt' => 'select_account',
+    'state' => 'pc'
 ]);
 $base_url = "/music-e-office";
 ?>

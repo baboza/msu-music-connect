@@ -121,25 +121,21 @@ if (isset($_GET['code'])) {
                 }
                 // ---------------------------------------------------------
 
-                // ตรวจสอบอย่างละเอียดว่ามาจากการใช้งาน Mobile หรือไม่
-                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $is_mobile_agent = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
-                
-                // เฉพาะกรณีที่ล็อกอินมาจากหน้า mobile หรือเปิดจากมือถือจริง จึงส่งไป mobile
-                $is_mobile = (isset($_GET['state']) && strpos((string)$_GET['state'], 'mobile') !== false) 
-                          || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile')
-                          || ($is_mobile_agent && empty($_SESSION['prefer_desktop']));
+                // ตรวจสอบที่มา: ส่งไป Mobile เฉพาะกรณีที่ล็อกอินผ่าน mobile/login.php (state=mobile) เท่านั้น!
+                $is_mobile_login = (isset($_GET['state']) && strpos((string)$_GET['state'], 'mobile') !== false) 
+                                || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile');
 
                 unset($_SESSION['login_target']);
                 setcookie('login_from_mobile', '', time() - 3600, '/');
 
-                // ส่งกลับไปหน้าแรก (Mobile หรือ PC)
-                if ($is_mobile) {
+                if ($is_mobile_login) {
+                    $_SESSION['prefer_desktop'] = false;
                     $_SESSION['app_mode'] = 'mobile';
                     setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
                     header("Location: ../mobile/index.php");
                     exit();
                 } else {
+                    // หากล็อกอินผ่าน auth/login.php ให้เข้าสู่ระบบหน้า PC (Desktop) เสมอ 100%!
                     $_SESSION['prefer_desktop'] = true;
                     $_SESSION['app_mode'] = 'desktop';
                     setcookie('app_mode', 'desktop', time() + (86400 * 30), '/');
@@ -148,15 +144,10 @@ if (isset($_GET['code'])) {
                 }
             } else {
                 $_SESSION['error'] = "อีเมล $google_email ยังไม่ได้ลงทะเบียนในระบบ กรุณาติดต่อแอดมิน";
-                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $is_mobile = (isset($_GET['state']) && strpos((string)$_GET['state'], 'mobile') !== false) 
-                          || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile')
-                          || (isset($_SESSION['app_mode']) && $_SESSION['app_mode'] === 'mobile')
-                          || (isset($_COOKIE['login_from_mobile']) && $_COOKIE['login_from_mobile'] === '1')
-                          || (isset($_COOKIE['app_mode']) && $_COOKIE['app_mode'] === 'mobile')
-                          || (bool)preg_match('/(android|iphone|ipad|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+                $is_mobile_err = (isset($_GET['state']) && strpos((string)$_GET['state'], 'mobile') !== false) 
+                              || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile');
                 unset($_SESSION['login_target']);
-                header("Location: " . ($is_mobile ? "../mobile/login.php" : "login.php"));
+                header("Location: " . ($is_mobile_err ? "../mobile/login.php" : "login.php"));
                 exit();
             }
         }

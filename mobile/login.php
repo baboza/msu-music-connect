@@ -14,15 +14,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ตรวจสอบอุปกรณ์: เฉพาะเมื่อเป็นอุปกรณ์มือถือจริงๆ จึงจำโหมด Mobile ใน Cookie
-$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
-
+// เมื่อเข้าใช้งานหน้า mobile/login.php ให้ตั้งค่าเป็น Mobile App ชัดเจน
 $_SESSION['login_target'] = 'mobile';
-if ($is_real_mobile) {
-    $_SESSION['app_mode'] = 'mobile';
-    setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
-    setcookie('login_from_mobile', '1', time() + 3600, '/');
+$_SESSION['prefer_desktop'] = false;
+$_SESSION['app_mode'] = 'mobile';
+setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
+
+// หากผู้ใช้จงใจคลิกสลับไปหน้า PC Login ผ่านลิงก์ (?pc=1)
+if (isset($_GET['pc'])) {
+    $_SESSION['login_target'] = 'pc';
+    $_SESSION['prefer_desktop'] = true;
+    $_SESSION['app_mode'] = 'desktop';
+    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
+    header("Location: ../auth/login.php?pc=1");
+    exit();
 }
 
 // ถ้าเข้าสู่ระบบแล้ว ให้ไปที่ mobile/index.php ทันที

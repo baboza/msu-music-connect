@@ -29,15 +29,14 @@ if (isset($_GET['pc'])) {
     setcookie('app_mode', 'mobile', time() + 86400 * 30, '/');
     header("Location: mobile/index.php?mobile=1");
     exit();
-} elseif (!$is_real_mobile) {
-    // หากเข้าจากเครื่องคอมพิวเตอร์ PC ให้อยู่หน้า Desktop เสมอ
+}
+
+// หากล็อกอินผ่าน auth/login.php หรือเข้าจาก PC ให้อยู่หน้า Desktop เสมอ
+if (!empty($_SESSION['prefer_desktop']) || !$is_real_mobile) {
     $_SESSION['prefer_desktop'] = true;
     $_SESSION['app_mode'] = 'desktop';
     setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
-}
-
-// สลับไปหน้า Mobile อัตโนมัติ เฉพาะเมื่อเป็นอุปกรณ์มือถือจริงๆ (ไม่ใช่ Desktop PC)
-if ($is_real_mobile && empty($_SESSION['prefer_desktop']) && !isset($_GET['pc'])) {
+} elseif ($is_real_mobile && !isset($_GET['pc']) && (isset($_SESSION['app_mode']) && $_SESSION['app_mode'] === 'mobile')) {
     header("Location: mobile/index.php");
     exit();
 }
