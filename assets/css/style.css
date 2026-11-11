@@ -1,0 +1,214 @@
+/* =========================================================
+   MUSIC E-OFFICE: WORLD-CLASS ENTERPRISE ERP 2.0 THEME
+   ========================================================= */
+
+:root {
+    --primary-purple: #39048f;
+    --primary-purple-hover: #4a06b8;
+    --light-purple: #5b13df;
+    --purple-subtle: #f4efff;
+    --premium-gold: #b48a1e;
+    --light-gold: #fef9c3;
+
+    --white-surface: #ffffff;
+    --bg-light: #f8fafc;
+    --slate-950: #090d16;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --text-dark: #0f172a;
+    --text-muted: #64748b;
+    --border-subtle: #e2e8f0;
+    --border-strong: #cbd5e1;
+
+    --shadow-soft: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+    --shadow-hover: 0 10px 25px -5px rgba(15, 23, 42, 0.07), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+}
+
+/* --- Base & Typography --- */
+* {
+    font-family: 'Google Sans', sans-serif;
+}
+
+body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn, .card-header, table {
+    font-family: 'Google Sans', sans-serif !important;
+}
+
+.fa, .fas, .far, .fal, .fad, .fab, .fa-solid, .fa-regular, .fa-brands, [class^="fa-"], [class*=" fa-"] {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+body {
+    font-family: 'Google Sans', sans-serif !important;
+    background-color: var(--bg-light) !important;
+    color: var(--text-dark);
+    overflow-x: hidden;
+    font-size: 0.9rem;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- Cards (Enterprise Surface) --- */
+.card {
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-soft) !important;
+    background-color: var(--white-surface) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
+}
+.card:hover {
+    border-color: var(--border-strong) !important;
+    box-shadow: var(--shadow-hover) !important;
+}
+
+.card-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--slate-900);
+    padding: 0.9rem 1.25rem !important;
+}
+
+/* --- Tables (High-Density Tabular Grid) --- */
+.table {
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 0;
+}
+.table>thead>tr>th {
+    border-bottom: 1px solid var(--border-subtle) !important;
+    background-color: #f8fafc !important;
+    color: var(--slate-600) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 11px 14px !important;
+}
+.table>tbody>tr>td {
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 13px 14px !important;
+    vertical-align: middle;
+    color: var(--slate-800);
+    font-size: 0.86rem;
+    transition: background-color 0.12s ease;
+}
+.table-hover>tbody>tr:hover>td {
+    background-color: #f8fafc !important;
+}
+
+/* --- Buttons --- */
+.btn {
+    border-radius: 8px !important;
+    padding: 7px 16px !important;
+    font-size: 0.84rem;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    transition: all 0.15s ease;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08) !important;
+}
+.btn-sm {
+    padding: 4px 10px !important;
+    font-size: 0.76rem !important;
+    border-radius: 6px !important;
+}
+.btn-primary {
+    background-color: var(--primary-purple) !important;
+    border-color: var(--primary-purple) !important;
+}
+.btn-primary:hover {
+    background-color: var(--primary-purple-hover) !important;
+    border-color: var(--primary-purple-hover) !important;
+}
+.btn-gold {
+    background-color: var(--premium-gold);
+    color: white;
+    border: none;
+}
+.btn-gold:hover {
+    background-color: #9a7416;
+    color: white;
+}
+
+/* --- Forms & Inputs --- */
+.form-control, .form-select {
+    border-radius: 8px !important;
+    border: 1px solid var(--border-strong) !important;
+    padding: 8px 12px !important;
+    font-size: 0.86rem;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    color: var(--slate-900) !important;
+    transition: all 0.15s ease;
+}
+.form-control:focus, .form-select:focus {
+    background-color: #ffffff !important;
+    border-color: var(--primary-purple) !important;
+    box-shadow: 0 0 0 3px rgba(57, 4, 143, 0.12) !important;
+}
+
+/* --- DataTables Fixes --- */
+div.dataTables_wrapper div.dataTables_filter input {
+    border-radius: 8px !important;
+    background-color: #fff !important;
+    border: 1px solid var(--border-strong) !important;
+    padding: 5px 12px !important;
+}
+div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 8px !important;
+    border: 1px solid var(--border-strong) !important;
+}
+.page-item .page-link {
+    border-radius: 6px !important;
+    margin: 0 2px !important;
+    border: 1px solid var(--border-subtle) !important;
+    background-color: #ffffff !important;
+    color: var(--slate-700) !important;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+.page-item.active .page-link {
+    background-color: var(--primary-purple) !important;
+    border-color: var(--primary-purple) !important;
+    color: #fff !important;
+}
+
+/* --- Dashboard Utilities --- */
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    background-color: var(--light-gold);
+    color: var(--premium-gold);
+    border-radius: 10px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+.extra-small {
+    font-size: 0.74rem;
+}
+
+/* Subtle Background Utilities */
+.bg-success-subtle { background-color: #dcfce7 !important; color: #15803d !important; }
+.bg-danger-subtle { background-color: #fee2e2 !important; color: #b91c1c !important; }
+.bg-primary-subtle { background-color: #dbeafe !important; color: #1d4ed8 !important; }
+.bg-info-subtle { background-color: #e0f2fe !important; color: #0369a1 !important; }
+.bg-warning-subtle { background-color: #fef3c7 !important; color: #b45309 !important; }
+.bg-purple-subtle { background-color: var(--purple-subtle) !important; color: var(--primary-purple) !important; }
+.text-purple { color: var(--primary-purple) !important; }
+.bg-purple { background-color: var(--primary-purple) !important; color: #ffffff !important; }
+.border-purple { border-color: var(--primary-purple) !important; }
+.btn-purple { background-color: var(--primary-purple) !important; border-color: var(--primary-purple) !important; color: #ffffff !important; }
+.btn-purple:hover { background-color: var(--primary-purple-hover) !important; border-color: var(--primary-purple-hover) !important; color: #ffffff !important; }
+.btn-outline-purple { color: var(--primary-purple) !important; border-color: var(--primary-purple) !important; background-color: transparent !important; }
+.btn-outline-purple:hover { background-color: var(--primary-purple) !important; border-color: var(--primary-purple) !important; color: #ffffff !important; }

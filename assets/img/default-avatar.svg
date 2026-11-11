@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="100%" height="100%">
+  <!-- Clean Neutral Background -->
+  <rect width="100%" height="100%" fill="#e2e8f0"/>
+
+  <!-- Standard Plain Person / People Icon -->
+  <g fill="#64748b">
+    <!-- Head -->
+    <circle cx="200" cy="165" r="72"/>
+    <!-- Shoulders & Torso -->
+    <path d="M72 410 C72 305, 120 265, 200 265 C280 265, 328 305, 328 410 C328 428, 314 438, 290 438 L110 438 C86 438, 72 428, 72 410 Z"/>
+  </g>
+</svg>

@@ -1,5 +1,69 @@
+# =============================================================
+# Git Ignore for Music MSU Connect (music-e-office)
+# =============================================================
+
+# Backups, Archives and Large Dumps
+*.zip
+*.tar.gz
+*.rar
+*.bak
+backup_*.zip
+*.mp4
+*.mov
+*.avi
+
+# Node & Mobile Build Artifacts (Capacitor)
 node_modules/
 android/
 ios/
 dist/
+
+# Environment & Sensitive Configs
+.env
+.env.*
+*.local.php
+
+# Scratch, Logs and Temporary Files
+scratch/
+tmp/
+temp/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# User Uploads (Ignore user uploaded files, keep directory structure)
+uploads/attendance/*
+uploads/avatars/*
+uploads/cv_certs/*
+uploads/km_attachments/*
+uploads/leaves/*
+uploads/meetings/*
+uploads/pr/*
+uploads/projects/*
+uploads/signatures/*
+uploads/trainings/*
+
+# Keep directory tracking and system logo assets in uploads
+!uploads/attendance/.gitkeep
+!uploads/avatars/.gitkeep
+!uploads/cv_certs/.gitkeep
+!uploads/km_attachments/.gitkeep
+!uploads/leaves/.gitkeep
+!uploads/meetings/.gitkeep
+!uploads/pr/.gitkeep
+!uploads/projects/.gitkeep
+!uploads/signatures/.gitkeep
+!uploads/trainings/.gitkeep
+!uploads/logo.png
+!uploads/gglogo.png
+!uploads/index.php
+
+# Operating System & IDE Files
 .DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

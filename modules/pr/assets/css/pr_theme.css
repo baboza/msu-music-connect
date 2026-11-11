@@ -1,0 +1,145 @@
+/**
+ * PR Module Modern Clean Purple & White Theme
+ * College of Music, Mahasarakham University
+ */
+
+:root {
+    --pr-purple: #4b0082;
+    --pr-purple-hover: #3b0066;
+    --pr-purple-vibrant: #6f42c1;
+    --pr-purple-light: #f6f2fc;
+    --pr-purple-border: #e9d8fd;
+    --pr-purple-gradient: linear-gradient(135deg, #4b0082 0%, #6f42c1 100%);
+    --pr-purple-gradient-soft: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    --pr-card-bg: #ffffff;
+    --pr-border-soft: #f1f5f9;
+}
+
+/* Typography & Colors */
+.text-purple { color: #4b0082 !important; }
+.text-purple-vibrant { color: #6f42c1 !important; }
+.bg-purple { background-color: #4b0082 !important; color: #ffffff !important; }
+.bg-purple-vibrant { background-color: #6f42c1 !important; color: #ffffff !important; }
+.bg-purple-subtle { background-color: #f6f2fc !important; color: #4b0082 !important; border: 1px solid #e9d8fd !important; }
+.border-purple { border-color: #6f42c1 !important; }
+.border-purple-subtle { border-color: #e9d8fd !important; }
+
+/* Buttons */
+.btn-purple {
+    background: linear-gradient(135deg, #4b0082 0%, #6f42c1 100%);
+    color: #ffffff !important;
+    border: none;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(75, 0, 130, 0.2);
+}
+.btn-purple:hover {
+    background: linear-gradient(135deg, #3b0066 0%, #59359a 100%);
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(75, 0, 130, 0.3);
+}
+
+.btn-outline-purple {
+    background: #ffffff;
+    color: #4b0082 !important;
+    border: 1.5px solid #6f42c1;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.btn-outline-purple:hover {
+    background: #f6f2fc;
+    color: #4b0082 !important;
+    border-color: #4b0082;
+    transform: translateY(-1px);
+}
+
+/* Modern Clean Cards */
+.card-modern {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+}
+.card-modern:hover {
+    box-shadow: 0 8px 28px rgba(75, 0, 130, 0.06);
+}
+
+/* Form Controls with Purple Focus */
+.form-control:focus, .form-select:focus {
+    border-color: #6f42c1 !important;
+    box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.15) !important;
+}
+
+/* Status Badges */
+.badge-pill-modern {
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-purple-soft {
+    background: #f6f2fc;
+    color: #4b0082;
+    border: 1px solid #e9d8fd;
+}
+.badge-emerald-soft {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+.badge-amber-soft {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+.badge-rose-soft {
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+}
+
+/* Modern Segmented Navigation Pills */
+.nav-pills-purple .nav-link {
+    color: #64748b;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 30px;
+    transition: all 0.2s ease;
+}
+.nav-pills-purple .nav-link.active {
+    background: linear-gradient(135deg, #4b0082 0%, #6f42c1 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(75, 0, 130, 0.25);
+}
+.nav-pills-purple .nav-link.active .badge {
+    background: #ffffff !important;
+    color: #4b0082 !important;
+}
+
+/* Display Cards (Screen 1 & Screen 2) in White & Purple */
+.screen-card-white {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 24px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.screen-card-white::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #4b0082, #a855f7);
+    opacity: 0.8;
+}
+.screen-card-white:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 35px rgba(75, 0, 130, 0.08);
+    border-color: #e9d8fd;
+}

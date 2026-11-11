@@ -1,0 +1,386 @@
+/**
+ * Music MSU Connect - Dark Mode System (Enterprise ERP 2.0)
+ * Fully compatible with html.dark-mode and body.dark-mode
+ */
+
+/* -------------------------------------------------------------
+   1. ROOT VARIABLES & PALETTE OVERRIDES
+   ------------------------------------------------------------- */
+.dark-mode, :root.dark-mode {
+    --primary: #c084fc; /* Royal Violet accent for dark mode */
+    --primary-light: rgba(192, 132, 252, 0.18);
+    --primary-surface: rgba(192, 132, 252, 0.12);
+    --primary-subtle: rgba(192, 132, 252, 0.15);
+    --primary-border: rgba(192, 132, 252, 0.25);
+    --primary-gradient: linear-gradient(135deg, #3b0764 0%, #581c87 50%, #7e22ce 100%);
+    --hero-gradient: linear-gradient(140deg, #2e0854 0%, #4c1d95 60%, #6d28d9 100%);
+    
+    --secondary: #1e293b;
+    --accent: #facc15;
+    
+    /* Surfaces */
+    --bg-color: #0b1120;
+    --surface: #1e293b;
+    --surface-elevated: #334155;
+    --text-dark: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-subtle: #334155;
+    --border-strong: #475569;
+    
+    --slate-900: #f8fafc;
+    --slate-800: #f1f5f9;
+    --slate-700: #e2e8f0;
+    --slate-600: #cbd5e1;
+    --slate-500: #94a3b8;
+    --slate-400: #64748b;
+    --slate-200: #334155;
+    --slate-100: #1e293b;
+    --slate-50:  #0f172a;
+}
+
+/* -------------------------------------------------------------
+   2. BODY & GENERAL TEXT
+   ------------------------------------------------------------- */
+.dark-mode body,
+body.dark-mode {
+    background-color: var(--bg-color) !important;
+    color: var(--text-dark) !important;
+}
+
+.dark-mode .text-dark,
+.dark-mode h1, .dark-mode h2, .dark-mode h3, 
+.dark-mode h4, .dark-mode h5, .dark-mode h6,
+.dark-mode .greeting-name,
+.dark-mode .mobile-brand-title,
+.dark-mode .service-title,
+.dark-mode .service-tile-name,
+.dark-mode .card-counter-large,
+.dark-mode .list-group-item h6,
+.dark-mode .fw-bold.text-dark {
+    color: #f8fafc !important;
+}
+
+.dark-mode .text-muted,
+.dark-mode small.text-muted,
+.dark-mode p.text-muted,
+.dark-mode .greeting-date,
+.dark-mode .card-counter-large .text-muted,
+.dark-mode .nav-item-custom i,
+.dark-mode p.small {
+    color: #94a3b8 !important;
+}
+
+.dark-mode .text-secondary {
+    color: #cbd5e1 !important;
+}
+
+/* -------------------------------------------------------------
+   3. HEADER & BOTTOM NAVIGATION DOCK
+   ------------------------------------------------------------- */
+.dark-mode .mobile-header {
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+.dark-mode .mobile-bottom-nav,
+.dark-mode .bottom-dock {
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid #334155 !important;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark-mode .nav-link-bottom,
+.dark-mode .dock-item {
+    color: #94a3b8 !important;
+}
+.dark-mode .nav-link-bottom.active,
+.dark-mode .dock-item.active {
+    color: #c084fc !important;
+}
+
+/* -------------------------------------------------------------
+   4. CARDS & CONTAINERS (BENTO BOX / DUAL CARDS)
+   ------------------------------------------------------------- */
+.dark-mode .bento-box, 
+.dark-mode .bento-card, 
+.dark-mode .bento-dual-card,
+.dark-mode .service-card-v2,
+.dark-mode .service-tile,
+.dark-mode .agenda-card,
+.dark-mode .card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark-mode .bento-hero,
+.dark-mode .bento-hero-time {
+    background: var(--hero-gradient) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* -------------------------------------------------------------
+   5. CALENDAR STRIP & AGENDA
+   ------------------------------------------------------------- */
+.dark-mode .calendar-day-pill {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+}
+.dark-mode .calendar-day-num {
+    color: #f8fafc !important;
+}
+.dark-mode .calendar-day-name {
+    color: #94a3b8 !important;
+}
+.dark-mode .calendar-day-pill.active {
+    background: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45) !important;
+}
+.dark-mode .calendar-day-pill.active .calendar-day-num,
+.dark-mode .calendar-day-pill.active .calendar-day-name {
+    color: #ffffff !important;
+}
+
+.dark-mode .agenda-pill-time {
+    background: rgba(192, 132, 252, 0.18) !important;
+    color: #c084fc !important;
+}
+
+/* -------------------------------------------------------------
+   6. BUTTONS & PILLS & ICONS
+   ------------------------------------------------------------- */
+.dark-mode .mobile-back-btn,
+.dark-mode .mobile-icon-btn,
+.dark-mode .header-icon-btn {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #c084fc !important;
+}
+.dark-mode .mobile-back-btn:active,
+.dark-mode .mobile-icon-btn:active {
+    background: #334155 !important;
+}
+
+.dark-mode .cat-pill,
+.dark-mode .exec-tab-pill {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+.dark-mode .cat-pill.active,
+.dark-mode .exec-tab-pill.active {
+    background: #8b5cf6 !important;
+    color: #ffffff !important;
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+
+.dark-mode .app-icon-container,
+.dark-mode .service-icon-box,
+.dark-mode .service-icon-wrap {
+    background: rgba(192, 132, 252, 0.15) !important;
+    color: #c084fc !important;
+    border-color: rgba(192, 132, 252, 0.25) !important;
+}
+
+.dark-mode .service-status-chip,
+.dark-mode .service-tile-badge {
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+}
+
+/* Primary Button in Dark Mode */
+.dark-mode .btn-primary {
+    background-color: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+.dark-mode .btn-primary:hover,
+.dark-mode .btn-primary:active {
+    background-color: #7c3aed !important;
+    border-color: #7c3aed !important;
+    color: #ffffff !important;
+}
+
+.dark-mode .btn-outline-primary {
+    color: #c084fc !important;
+    border-color: #c084fc !important;
+    background: transparent !important;
+}
+.dark-mode .btn-outline-primary:hover,
+.dark-mode .btn-outline-primary:active {
+    background-color: #8b5cf6 !important;
+    border-color: #8b5cf6 !important;
+    color: #ffffff !important;
+}
+
+/* -------------------------------------------------------------
+   7. NAVIGATION PILLS (SUB-PAGES TABS) & BOOTSTRAP OVERRIDES
+   ------------------------------------------------------------- */
+.dark-mode .bg-white {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+.dark-mode .bg-light {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+}
+.dark-mode .bg-slate-100 {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+}
+
+.dark-mode .nav-pills {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+.dark-mode .nav-pills .nav-link {
+    color: #94a3b8 !important;
+}
+.dark-mode .nav-pills .nav-link.active,
+.dark-mode .nav-pills .show > .nav-link {
+    background-color: #8b5cf6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35) !important;
+}
+
+/* -------------------------------------------------------------
+   8. FORMS, INPUTS & MODALS
+   ------------------------------------------------------------- */
+.dark-mode .form-control,
+.dark-mode .form-select,
+.dark-mode textarea.form-control {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+.dark-mode .form-control:focus,
+.dark-mode .form-select:focus {
+    border-color: #c084fc !important;
+    box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.25) !important;
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+}
+.dark-mode .form-label {
+    color: #cbd5e1 !important;
+}
+.dark-mode .input-group-text {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+.dark-mode .form-check-input {
+    background-color: #1e293b;
+    border-color: #475569;
+}
+.dark-mode .form-check-input:checked {
+    background-color: #8b5cf6;
+    border-color: #8b5cf6;
+}
+
+.dark-mode .modal-content {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+.dark-mode .modal-header,
+.dark-mode .modal-footer {
+    border-color: #334155 !important;
+}
+
+.dark-mode .dropdown-menu {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+.dark-mode .dropdown-item {
+    color: #f8fafc !important;
+}
+.dark-mode .dropdown-item:hover {
+    background-color: #0f172a !important;
+    color: #fff !important;
+}
+
+.dark-mode .list-group-item {
+    background-color: transparent !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+/* -------------------------------------------------------------
+   9. TABLES & PROGRESS BARS
+   ------------------------------------------------------------- */
+.dark-mode .table {
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+.dark-mode .table th,
+.dark-mode .table td {
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+    background-color: transparent !important;
+}
+
+.dark-mode .progress,
+.dark-mode .bento-progress {
+    background-color: #334155 !important;
+}
+
+.dark-mode .border,
+.dark-mode .border-top,
+.dark-mode .border-bottom,
+.dark-mode .border-start,
+.dark-mode .border-end {
+    border-color: #334155 !important;
+}
+
+/* -------------------------------------------------------------
+   10. SEMANTIC BADGES & UTILITIES
+   ------------------------------------------------------------- */
+.dark-mode .bg-purple-subtle {
+    background-color: rgba(192, 132, 252, 0.15) !important;
+    color: #c084fc !important;
+    border-color: rgba(192, 132, 252, 0.25) !important;
+}
+.dark-mode .text-purple {
+    color: #c084fc !important;
+}
+.dark-mode .border-purple-subtle {
+    border-color: rgba(192, 132, 252, 0.25) !important;
+}
+.dark-mode .badge-purple {
+    background-color: rgba(192, 132, 252, 0.2) !important;
+    color: #c084fc !important;
+}
+
+.dark-mode .bg-success-subtle {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #34d399 !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.dark-mode .bg-warning-subtle {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.dark-mode .bg-danger-subtle {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.25) !important;
+}
+.dark-mode .bg-info-subtle {
+    background-color: rgba(6, 182, 212, 0.15) !important;
+    color: #22d3ee !important;
+    border-color: rgba(6, 182, 212, 0.25) !important;
+}

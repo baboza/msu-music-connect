@@ -1,0 +1,25 @@
+{
+  "name": "Music MSU Connect ERP 2.0",
+  "short_name": "MSU Connect",
+  "description": "ระบบสำนักงานอิเล็กทรอนิกส์ วิทยาลัยดุริยางคศิลป์ มหาวิทยาลัยมหาสารคาม",
+  "start_url": "index.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#24005e",
+  "theme_color": "#24005e",
+  "icons": [
+    {
+      "src": "../uploads/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../uploads/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
