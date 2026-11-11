@@ -1,12 +1,16 @@
 <?php
-ini_set('session.gc_maxlifetime', 86400);
-session_set_cookie_params([
-    'lifetime' => 86400,
-    'path' => '/',
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', 86400);
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 86400,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    } else {
+        session_set_cookie_params(86400, '/; samesite=Lax', '', false, true);
+    }
     session_start();
 }
 
@@ -28,7 +32,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // --- [ตั้งค่า Google OAuth 2.0] ---
-require_once '../config/constants.php';
+require_once __DIR__ . '/../config/constants.php';
 $client_id = GOOGLE_CLIENT_ID;
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
 $host_url = $protocol . ($_SERVER['HTTP_HOST'] ?? 'localhost');

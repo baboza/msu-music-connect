@@ -1,7 +1,7 @@
 <?php
 require_once 'auth_check.php';
 require_once 'includes/header.php';
-require_once '../includes/functions_noti.php'; // สำหรับ Telegram Noti (ถ้ามี)
+require_once __DIR__ . '/../includes/functions_noti.php'; // สำหรับ Telegram Noti (ถ้ามี)
 
 // 1. ดึงข้อมูลผู้ใช้งานเพื่อตรวจสอบลายเซ็น
 $stmt_user = $pdo->prepare("SELECT signature_file FROM users WHERE user_id = ?");

@@ -4,16 +4,22 @@ ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
-ini_set('session.gc_maxlifetime', 86400);
-session_set_cookie_params([
-    'lifetime' => 86400,
-    'path' => '/',
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
-session_start();
-require_once '../config/db.php';
-require_once '../config/constants.php';
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', 86400);
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 86400,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    } else {
+        session_set_cookie_params(86400, '/; samesite=Lax', '', false, true);
+    }
+    session_start();
+}
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/constants.php';
 
 // --- [ค่าคงที่จาก Google JSON ของคุณ] ---
 $client_id     = GOOGLE_CLIENT_ID;
