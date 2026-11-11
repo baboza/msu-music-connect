@@ -23,11 +23,13 @@ session_destroy();
 
 // 4. ส่งกลับไปหน้า Login แบบเจาะจง Path ป้องกันปัญหาบน Server จริง
 // หากไม่ได้ติดตั้งในโฟลเดอร์ /music-e-office/ ให้ปรับแก้ URL ตรงนี้ให้ตรงกับโฟลเดอร์จริงครับ
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+
 $is_mobile = (isset($_GET['from']) && $_GET['from'] === 'mobile') 
           || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile')
-          || (isset($_SESSION['app_mode']) && $_SESSION['app_mode'] === 'mobile')
-          || (isset($_COOKIE['app_mode']) && $_COOKIE['app_mode'] === 'mobile')
-          || (isset($_SERVER['HTTP_USER_AGENT']) && preg_match('/(android|iphone|ipad|ipod|blackberry|windows phone|mobile)/i', $_SERVER['HTTP_USER_AGENT']));
+          || ($is_real_mobile && empty($_SESSION['prefer_desktop']));
+
 $login_url = $is_mobile ? "/music-e-office/mobile/login.php" : "/music-e-office/auth/login.php"; 
 
 header("Location: " . $login_url);

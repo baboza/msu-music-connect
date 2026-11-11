@@ -117,13 +117,12 @@ if (isset($_GET['code'])) {
 
                 // ตรวจสอบอย่างละเอียดว่ามาจากการใช้งาน Mobile หรือไม่
                 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $is_mobile_agent = (bool)preg_match('/(android|iphone|ipad|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+                $is_mobile_agent = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+                
+                // เฉพาะกรณีที่ล็อกอินมาจากหน้า mobile หรือเปิดจากมือถือจริง จึงส่งไป mobile
                 $is_mobile = (isset($_GET['state']) && strpos((string)$_GET['state'], 'mobile') !== false) 
                           || (isset($_SESSION['login_target']) && $_SESSION['login_target'] === 'mobile')
-                          || (isset($_SESSION['app_mode']) && $_SESSION['app_mode'] === 'mobile')
-                          || (isset($_COOKIE['login_from_mobile']) && $_COOKIE['login_from_mobile'] === '1')
-                          || (isset($_COOKIE['app_mode']) && $_COOKIE['app_mode'] === 'mobile')
-                          || $is_mobile_agent;
+                          || ($is_mobile_agent && empty($_SESSION['prefer_desktop']));
 
                 unset($_SESSION['login_target']);
                 setcookie('login_from_mobile', '', time() - 3600, '/');
@@ -135,7 +134,9 @@ if (isset($_GET['code'])) {
                     header("Location: ../mobile/index.php");
                     exit();
                 } else {
+                    $_SESSION['prefer_desktop'] = true;
                     $_SESSION['app_mode'] = 'desktop';
+                    setcookie('app_mode', 'desktop', time() + (86400 * 30), '/');
                     header("Location: ../index.php");
                     exit();
                 }

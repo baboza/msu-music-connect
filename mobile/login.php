@@ -10,11 +10,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// กำหนดและจำโหมด Mobile ทั้งใน Session และ Cookie Path='/'
+// ตรวจสอบอุปกรณ์: เฉพาะเมื่อเป็นอุปกรณ์มือถือจริงๆ จึงจำโหมด Mobile ใน Cookie
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
+
 $_SESSION['login_target'] = 'mobile';
-$_SESSION['app_mode']     = 'mobile';
-setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
-setcookie('login_from_mobile', '1', time() + 3600, '/');
+if ($is_real_mobile) {
+    $_SESSION['app_mode'] = 'mobile';
+    setcookie('app_mode', 'mobile', time() + (86400 * 30), '/');
+    setcookie('login_from_mobile', '1', time() + 3600, '/');
+}
 
 // ถ้าเข้าสู่ระบบแล้ว ให้ไปที่ mobile/index.php ทันที
 if (isset($_SESSION['user_id'])) {

@@ -10,20 +10,25 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ตรวจจับว่าเป็นอุปกรณ์พกพา หรืออยู่ในโหมด Mobile หรือไม่
-$is_mobile_device = (isset($_COOKIE['app_mode']) && $_COOKIE['app_mode'] === 'mobile')
-    || (isset($_SESSION['app_mode']) && $_SESSION['app_mode'] === 'mobile')
-    || (isset($_SERVER['HTTP_USER_AGENT']) && preg_match('/(android|iphone|ipad|ipod|blackberry|windows phone|mobile)/i', $_SERVER['HTTP_USER_AGENT']));
+// ตรวจจับว่าเป็นอุปกรณ์พกพาจริงหรือไม่ (ไม่ใช้ Cookie เก่ามาตัดสินแทน PC)
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$is_real_mobile = (bool)preg_match('/(android|iphone|ipod|blackberry|windows phone|mobile)/i', $user_agent);
 
-// หากเข้าจากมือถือ และไม่ได้ระบุให้เปิดเวอร์ชัน PC ให้สลับไปหน้า Mobile Login อัตโนมัติ
-if ($is_mobile_device && !isset($_GET['pc'])) {
+if (isset($_GET['pc']) || !$is_real_mobile) {
+    $_SESSION['prefer_desktop'] = true;
+    $_SESSION['app_mode'] = 'desktop';
+    setcookie('app_mode', 'desktop', time() + 86400 * 30, '/');
+}
+
+// หากเข้าจากมือถือจริงๆ และไม่ได้เลือก PC ให้สลับไปหน้า Mobile Login อัตโนมัติ
+if ($is_real_mobile && !isset($_GET['pc']) && empty($_SESSION['prefer_desktop'])) {
     header("Location: ../mobile/login.php");
     exit();
 }
 
 // หากล็อกอินอยู่แล้ว ให้ไปหน้าแรกตามอุปกรณ์
 if (isset($_SESSION['user_id'])) {
-    header("Location: " . ($is_mobile_device ? "../mobile/index.php" : "../index.php"));
+    header("Location: " . ($is_real_mobile && empty($_SESSION['prefer_desktop']) ? "../mobile/index.php" : "../index.php"));
     exit();
 }
 
