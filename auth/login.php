@@ -473,10 +473,16 @@ $base_url = "/music-e-office";
                 background: #f8fafc;
             }
 
+            body {
+                overflow-x: hidden !important;
+            }
+
             .erp-auth-shell {
                 flex-direction: column;
                 min-height: 100vh;
-                width: 100%;
+                width: 100% !important;
+                max-width: 100vw !important;
+                overflow-x: hidden !important;
             }
 
             /* Hide Desktop Left Showcase */
@@ -487,207 +493,264 @@ $base_url = "/music-e-office";
             /* Full-width container wrapper */
             .erp-auth-wrapper {
                 flex: none;
-                width: 100%;
+                width: 100% !important;
+                max-width: 100vw !important;
                 min-height: 100vh;
-                padding: 0;
+                padding: 0 !important;
                 background: #f8fafc;
                 display: flex;
                 flex-direction: column;
                 justify-content: flex-start;
-                align-items: center;
+                align-items: stretch !important;
+                overflow-x: hidden !important;
+                box-sizing: border-box !important;
             }
 
-            /* ==========================================
-               MOBILE HERO HEADER: Deep #39048f Gradient
+                        /* ==========================================
+               PC MOBILE TOP HEADER: Centered Executive
                ========================================== */
-            .version-switcher-wrapper {
-                padding: 12px 16px;
-                background: #0d011a;
-                display: flex;
-                justify-content: center;
-                width: 100%;
-            }
-
-            .version-segmented-control {
-                display: inline-flex;
-                background: rgba(255, 255, 255, 0.1);
-                padding: 3px;
-                border-radius: 99px;
-                border: 1px solid rgba(255, 255, 255, 0.14);
-                width: 100%;
-                max-width: 320px;
-            }
-
-            .segment-btn {
-                flex: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px;
-                padding: 6px 12px;
-                border-radius: 99px;
-                font-size: 0.76rem;
-                font-weight: 600;
-                text-decoration: none;
-                color: rgba(255, 255, 255, 0.7);
-                transition: all 0.2s ease;
-            }
-
-            .segment-btn.active {
-                background: #ffffff;
-                color: #150026;
-                font-weight: 700;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            }
-
-            .segment-btn:not(.active):hover {
-                color: #ffffff;
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            .mobile-login-hero {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                background: radial-gradient(circle at 85% 15%, rgba(91, 19, 223, 0.5) 0%, transparent 60%),
-                            radial-gradient(circle at 15% 85%, rgba(197, 160, 40, 0.16) 0%, transparent 45%),
-                            linear-gradient(155deg, #150026 0%, #39048f 60%, #4a06b8 100%);
-                color: #ffffff;
-                padding: 3rem 1.25rem 3.5rem 1.25rem;
+            .pc-mobile-header {
+                width: 100% !important;
+                background: radial-gradient(circle at 15% 20%, rgba(91, 19, 223, 0.3) 0%, transparent 60%),
+                            linear-gradient(155deg, #090d16 0%, #0f172a 65%, #1e293b 100%);
+                border-bottom: 2px solid #c5a028;
+                padding: 1.5rem 1rem 1.6rem 1rem;
                 text-align: center;
-                position: relative;
-                overflow: hidden;
+                color: #ffffff;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                box-sizing: border-box !important;
             }
 
-            /* Ambient Rings */
-            .mobile-login-hero::before {
-                content: "";
-                position: absolute;
-                top: -60px;
-                right: -60px;
-                width: 260px;
-                height: 260px;
-                border-radius: 50%;
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                box-shadow: 0 0 0 35px rgba(255, 255, 255, 0.03), 0 0 0 70px rgba(255, 255, 255, 0.02);
-                pointer-events: none;
+            .pc-mobile-logo {
+                width: 52px;
+                height: 52px;
+                object-fit: contain;
+                background: #ffffff;
+                border-radius: 14px;
+                padding: 5px;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(197, 160, 40, 0.3);
+                margin: 0 auto 0.75rem auto;
+                display: block;
             }
 
-            .mobile-hero-badge-wrap {
+            .pc-mobile-title {
+                font-family: 'Outfit', sans-serif !important;
+                font-size: 1.35rem;
+                font-weight: 800;
+                line-height: 1.2;
+                color: #ffffff;
+                margin-bottom: 0.2rem;
+            }
+
+            .pc-mobile-sub {
+                font-size: 0.76rem;
+                color: #cbd5e1;
+                margin-bottom: 0.85rem;
+            }
+
+            .pc-portal-badge {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
                 padding: 4px 12px;
-                background: rgba(255, 255, 255, 0.12);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(197, 160, 40, 0.15);
+                border: 1px solid rgba(197, 160, 40, 0.4);
                 border-radius: 99px;
-                backdrop-filter: blur(8px);
-                font-size: 0.68rem;
+                font-size: 0.72rem;
                 font-weight: 700;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                color: #fde047;
-                margin-bottom: 1.1rem;
+                color: #fef08a;
             }
 
-            .mobile-hero-logo {
-                width: 68px;
-                height: 68px;
-                object-fit: contain;
-                background: #ffffff;
-                border-radius: 18px;
-                padding: 7px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.28), 0 0 0 4px rgba(255, 255, 255, 0.15);
-                margin-bottom: 0.9rem;
+            /* ==========================================
+               MOBILE DETECTION & PROMPT BANNER
+               ========================================== */
+            .mobile-prompt-container {
+                width: 100% !important;
+                max-width: 480px !important;
+                margin: 0 auto !important;
+                padding: 1rem 1rem 0 1rem !important;
+                box-sizing: border-box !important;
             }
 
-            .mobile-hero-brand {
-                font-family: 'Outfit', sans-serif !important;
-                font-size: 1.55rem;
-                font-weight: 800;
-                letter-spacing: -0.02em;
-                margin-bottom: 0.25rem;
+            .mobile-prompt-box {
+                background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+                border: 1px solid #ddd6fe;
+                border-radius: 16px;
+                padding: 12px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+            }
+
+            .prompt-icon {
+                width: 36px;
+                height: 36px;
+                background: #7c3aed;
                 color: #ffffff;
-            }
-
-            .mobile-hero-sub {
-                font-size: 0.8rem;
-                color: rgba(255, 255, 255, 0.85);
-                font-weight: 400;
-                margin-bottom: 1.25rem;
-                max-width: 320px;
-            }
-
-            /* Feature Highlights */
-            .mobile-hero-pills {
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
-                flex-wrap: wrap;
+                font-size: 1.1rem;
+                flex-shrink: 0;
             }
 
-            .mobile-pill {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.16);
-                border-radius: 99px;
-                padding: 4px 11px;
-                font-size: 0.72rem;
-                font-weight: 500;
-                color: #ffffff;
-                backdrop-filter: blur(6px);
+            .prompt-info {
+                flex: 1;
+                text-align: left;
             }
 
-            .mobile-pill i {
+            .prompt-head {
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: #4c1d95;
+                line-height: 1.25;
+            }
+
+            .prompt-desc {
                 font-size: 0.7rem;
-                color: #fde047;
+                color: #6d28d9;
+            }
+
+            .btn-prompt-switch {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                background: #7c3aed;
+                color: #ffffff !important;
+                padding: 9px 14px;
+                border-radius: 12px;
+                font-size: 0.78rem;
+                font-weight: 600;
+                text-decoration: none;
+                box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3);
+                transition: 0.15s;
+                width: 100%;
+            }
+
+            .btn-prompt-switch:active {
+                transform: scale(0.96);
+                background: #6d28d9;
             }
 
             /* ==========================================
                MOBILE AUTH CONTAINER & CARD
                ========================================== */
             .erp-auth-panel {
-                width: 100%;
-                max-width: 440px;
-                padding: 0 1.25rem 2.5rem 1.25rem;
-                margin-top: -26px;
+                width: 100% !important;
+                max-width: 480px !important;
+                margin: 0 auto !important;
+                padding: 0.85rem 1rem 2rem 1rem !important;
                 position: relative;
                 z-index: 10;
+                box-sizing: border-box !important;
             }
 
             .erp-auth-card {
-                border-radius: 22px !important;
-                border: 1px solid rgba(226, 232, 240, 0.8) !important;
-                box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(57, 4, 143, 0.06) !important;
-                padding: 1.85rem 1.5rem !important;
+                border-radius: 20px !important;
+                border: 1px solid #e2e8f0 !important;
+                box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.08) !important;
+                padding: 1.5rem 1.15rem !important;
                 background: #ffffff !important;
+                box-sizing: border-box;
+            }
+
+            .pc-version-badge {
+                display: inline-flex;
+                align-items: center;
+                background: #f1f5f9;
+                color: #334155;
+                border: 1px solid #cbd5e1;
+                border-radius: 99px;
+                padding: 3px 10px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                margin-bottom: 0.85rem;
             }
 
             .erp-auth-heading {
                 font-size: 1.35rem !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
             }
 
             .erp-auth-subtitle {
-                font-size: 0.84rem !important;
-                margin-bottom: 1.45rem !important;
+                font-size: 0.82rem !important;
+                color: #64748b !important;
+                margin-bottom: 1.35rem !important;
+                line-height: 1.5 !important;
             }
 
             .btn-erp-google {
-                padding: 14px 16px !important;
-                font-size: 0.92rem !important;
+                padding: 12px 12px !important;
+                font-size: 0.86rem !important;
                 border-radius: 14px !important;
                 background: #0f172a !important;
+                gap: 8px !important;
+                box-sizing: border-box;
             }
 
+            /* PC Features Section on Mobile */
+            .pc-features-mobile {
+                margin-top: 1.25rem;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 18px;
+                padding: 1.25rem;
+                box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+            }
+
+            .pc-features-heading {
+                font-size: 0.78rem;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+
+            .pc-feature-row {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .pcf-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                font-size: 0.76rem;
+            }
+
+            .pcf-item i {
+                font-size: 1rem;
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+
+            .pcf-item strong {
+                display: block;
+                color: #0f172a;
+                font-size: 0.78rem;
+            }
+
+            .pcf-item span {
+                color: #64748b;
+                font-size: 0.72rem;
+            }
+
+            .text-gold { color: #c5a028 !important; }
+            .text-purple { color: #7c3aed !important; }
+            .text-cyan { color: #0284c7 !important; }
+            .text-amber { color: #d97706 !important; }
+
             .erp-auth-footer {
-                margin-top: 1.75rem !important;
+                margin-top: 1.5rem !important;
                 font-size: 0.74rem !important;
                 color: var(--slate-600) !important;
+                text-align: center;
             }
         }
     </style>
@@ -772,35 +835,34 @@ $base_url = "/music-e-office";
         <!-- =========================================================
              MOBILE HERO BANNER: Shown only on Mobile/Tablet
              ========================================================= -->
-        <!-- Version Segment Control on Mobile -->
-        <div class="version-switcher-wrapper d-lg-none">
-            <div class="version-segmented-control">
-                <a href="../mobile/login.php?mobile=1" class="segment-btn">
-                    <i class="fa-solid fa-mobile-screen-button"></i> Mobile App
-                </a>
-                <span class="segment-btn active">
-                    <i class="fa-solid fa-desktop"></i> PC Desktop
-                </span>
-            </div>
-        </div>
-
-        <header class="mobile-login-hero">
-            <div class="mobile-hero-badge-wrap">
-                <i class="fa-solid fa-sparkles"></i>
-                <span>💻 PC Desktop Web ERP (สำหรับคอมพิวเตอร์)</span>
-            </div>
-            
-            <img src="<?php echo $base_url; ?>/uploads/logo.png" alt="Logo" class="mobile-hero-logo">
-            
-            <h1 class="mobile-hero-brand">Music MSU Connect</h1>
-            <p class="mobile-hero-sub">วิทยาลัยดุริยางคศิลป์ มหาวิทยาลัยมหาสารคาม</p>
-            
-            <div class="mobile-hero-pills">
-                <span class="mobile-pill"><i class="fa-solid fa-signature"></i> อนุมัติคำร้อง</span>
-                <span class="mobile-pill"><i class="fa-solid fa-chart-line"></i> แดชบอร์ด</span>
-                <span class="mobile-pill"><i class="fa-solid fa-guitar"></i> ห้องซ้อมดนตรี</span>
+        <!-- PC Desktop Header for Mobile View -->
+        <header class="pc-mobile-header d-lg-none">
+            <img src="<?php echo $base_url; ?>/uploads/logo.png" alt="MSU Music Logo" class="pc-mobile-logo">
+            <h1 class="pc-mobile-title">Music MSU Connect</h1>
+            <div class="pc-mobile-sub">วิทยาลัยดุริยางคศิลป์ มหาวิทยาลัยมหาสารคาม</div>
+            <div class="pc-portal-badge">
+                <i class="fa-solid fa-laptop-code text-gold"></i>
+                <span>ระบบ e-Office • เวอร์ชัน PC Desktop</span>
             </div>
         </header>
+
+        <!-- Mobile Device Detection Prompt Banner -->
+        <div class="mobile-prompt-container d-lg-none">
+            <div class="mobile-prompt-box">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="prompt-icon">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div class="prompt-info">
+                        <div class="prompt-head">คุณกำลังเปิดหน้า PC บนสมาร์ทโฟน</div>
+                        <div class="prompt-desc">ต้องการใช้งานแบบแอปมือถือที่สะดวกรวดเร็วกว่า?</div>
+                    </div>
+                </div>
+                <a href="../mobile/login.php?mobile=1" class="btn-prompt-switch">
+                    <i class="fa-solid fa-mobile-screen me-1"></i> สลับไปใช้งานเวอร์ชัน Mobile App <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
 
         <!-- =========================================================
              AUTH CARD CONTAINER
@@ -811,10 +873,14 @@ $base_url = "/music-e-office";
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
 
-                <div class="mb-2"><span class="badge bg-light text-secondary border px-2.5 py-1" style="font-size: 0.72rem; letter-spacing: 0.02em;"><i class="fa-solid fa-desktop text-purple me-1"></i> เวอร์ชัน PC (Desktop ERP)</span></div>
+                <div class="mb-2">
+                    <span class="pc-version-badge">
+                        <i class="fa-solid fa-desktop text-purple me-1"></i> เวอร์ชันเต็ม PC Desktop ERP
+                    </span>
+                </div>
                 <h2 class="erp-auth-heading">เข้าสู่ระบบปฏิบัติการ</h2>
                 <p class="erp-auth-subtitle">
-                    ยืนยันตัวตนผ่านระบบ Single Sign-On (SSO) เพื่อเข้าถึงพื้นที่ทำงานของคุณ
+                    ยืนยันตัวตนผ่านระบบ Single Sign-On (SSO) เพื่อเข้าถึงพื้นที่ทำงานคอมพิวเตอร์
                 </p>
 
                 <?php if (isset($_SESSION['error'])): ?>
@@ -828,7 +894,7 @@ $base_url = "/music-e-office";
                     <span class="google-icon-pill">
                         <img src="<?php echo $base_url; ?>/uploads/gglogo.png" alt="Google">
                     </span>
-                    <span class="flex-grow-1 text-center">เข้าสู่ระบบด้วยบัญชี Google มหาวิทยาลัย</span>
+                    <span class="flex-grow-1 text-center">เข้าสู่ระบบด้วย Google มหาวิทยาลัย</span>
                     <i class="fa-solid fa-arrow-right d-none d-sm-inline" style="font-size: 0.8rem; opacity: 0.8;"></i>
                 </a>
 
@@ -845,12 +911,37 @@ $base_url = "/music-e-office";
                 </div>
             </div>
 
-            <div class="text-center mb-3">
-                    <a href="../mobile/login.php?mobile=1" class="btn btn-sm btn-outline-purple rounded-pill px-3 py-1 extra-small fw-bold" style="border-color: rgba(57, 4, 143, 0.3); color: #39048f; background: rgba(57, 4, 143, 0.04); text-decoration: none;">
-                        <i class="fa-solid fa-mobile-screen-button me-1"></i> สลับไปหน้าเข้าสู่ระบบเวอร์ชัน Mobile App (สำหรับมือถือ)
-                    </a>
+            <!-- PC Features Section on Mobile Screen -->
+            <div class="pc-features-mobile d-lg-none">
+                <div class="pc-features-heading">
+                    <i class="fa-solid fa-layer-group me-1 text-gold"></i> ขอบเขตระบบงานเวอร์ชันเต็ม (PC ERP)
                 </div>
-                <div class="erp-auth-footer">
+                <div class="pc-feature-row">
+                    <div class="pcf-item">
+                        <i class="fa-solid fa-file-invoice text-purple"></i>
+                        <div>
+                            <strong>ระบบสารบรรณ & อนุมัติเอกสาร</strong>
+                            <span>จัดการหนังสือเวียน แนบไฟล์ พิมพ์เอกสารราชการ</span>
+                        </div>
+                    </div>
+                    <div class="pcf-item">
+                        <i class="fa-solid fa-chart-pie text-cyan"></i>
+                        <div>
+                            <strong>แดชบอร์ดงบประมาณ & โครงการ</strong>
+                            <span>ติดตามงบประมาณ รายงานผล และสถิติเชิงลึก</span>
+                        </div>
+                    </div>
+                    <div class="pcf-item">
+                        <i class="fa-solid fa-building-user text-amber"></i>
+                        <div>
+                            <strong>บริหารห้องประชุมและพัสดุครุภัณฑ์</strong>
+                            <span>ระบบจัดการห้องประชุม ยืมคืนพัสดุ และครุภัณฑ์</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="erp-auth-footer">
                 <div>พบปัญหาการเข้าใช้งาน กรุณาติดต่อ <strong>งานเทคโนโลยีสารสนเทศ</strong></div>
                 <div class="mt-1 text-muted" style="font-size: 0.7rem;">วิทยาลัยดุริยางคศิลป์ มหาวิทยาลัยมหาสารคาม</div>
             </div>

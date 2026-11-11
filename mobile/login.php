@@ -118,61 +118,14 @@ $base_url = "/music-e-office";
         }
 
         /* ---------------------------------------------------------
-           1. TOP SEGMENT SWITCHER: PC vs Mobile
-           --------------------------------------------------------- */
-        .version-switcher-wrapper {
-            padding: 14px 16px 8px 16px;
-            background: linear-gradient(180deg, #0f172a 0%, #171c38 100%);
-            display: flex;
-            justify-content: center;
-        }
-
-        .version-segmented-control {
-            display: inline-flex;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 3px;
-            border-radius: 99px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            width: 100%;
-            max-width: 320px;
-        }
-
-        .segment-btn {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 99px;
-            font-size: 0.76rem;
-            font-weight: 600;
-            text-decoration: none;
-            color: rgba(255, 255, 255, 0.7);
-            transition: all 0.2s ease;
-        }
-
-        .segment-btn.active {
-            background: #ffffff;
-            color: #1e1b4b;
-            font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .segment-btn:not(.active):hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        /* ---------------------------------------------------------
-           2. VIBRANT MOBILE APP HERO
+           1. VIBRANT MOBILE APP HERO
            --------------------------------------------------------- */
         .mobile-app-hero {
             background: radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.45) 0%, transparent 55%),
                         radial-gradient(circle at 15% 85%, rgba(6, 182, 212, 0.3) 0%, transparent 50%),
                         linear-gradient(160deg, #171c38 0%, #1e1b4b 40%, #312e81 85%, #4338ca 100%);
             color: #ffffff;
-            padding: 1.75rem 1.25rem 2.5rem 1.25rem;
+            padding: 2.75rem 1.25rem 2.85rem 1.25rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -592,19 +545,7 @@ $base_url = "/music-e-office";
 
 <div class="mobile-app-shell">
     
-    <!-- 1. Top Segment Switcher -->
-    <div class="version-switcher-wrapper">
-        <div class="version-segmented-control">
-            <span class="segment-btn active">
-                <i class="fa-solid fa-mobile-screen-button"></i> Mobile App
-            </span>
-            <a href="../auth/login.php?pc=1" class="segment-btn">
-                <i class="fa-solid fa-desktop"></i> PC Desktop
-            </a>
-        </div>
-    </div>
-
-    <!-- 2. Mobile App Hero Banner -->
+    <!-- Mobile App Hero Banner -->
     <header class="mobile-app-hero">
         <div class="app-squircle-box">
             <img src="<?php echo $base_url; ?>/uploads/logo.png" alt="MSU Music Logo">
