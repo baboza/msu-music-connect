@@ -500,6 +500,51 @@ $base_url = "/music-e-office";
             /* ==========================================
                MOBILE HERO HEADER: Deep #39048f Gradient
                ========================================== */
+            .version-switcher-wrapper {
+                padding: 12px 16px;
+                background: #0d011a;
+                display: flex;
+                justify-content: center;
+                width: 100%;
+            }
+
+            .version-segmented-control {
+                display: inline-flex;
+                background: rgba(255, 255, 255, 0.1);
+                padding: 3px;
+                border-radius: 99px;
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .segment-btn {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 99px;
+                font-size: 0.76rem;
+                font-weight: 600;
+                text-decoration: none;
+                color: rgba(255, 255, 255, 0.7);
+                transition: all 0.2s ease;
+            }
+
+            .segment-btn.active {
+                background: #ffffff;
+                color: #150026;
+                font-weight: 700;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            .segment-btn:not(.active):hover {
+                color: #ffffff;
+                background: rgba(255, 255, 255, 0.08);
+            }
+
             .mobile-login-hero {
                 display: flex;
                 flex-direction: column;
@@ -727,10 +772,22 @@ $base_url = "/music-e-office";
         <!-- =========================================================
              MOBILE HERO BANNER: Shown only on Mobile/Tablet
              ========================================================= -->
+        <!-- Version Segment Control on Mobile -->
+        <div class="version-switcher-wrapper d-lg-none">
+            <div class="version-segmented-control">
+                <a href="../mobile/login.php?mobile=1" class="segment-btn">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Mobile App
+                </a>
+                <span class="segment-btn active">
+                    <i class="fa-solid fa-desktop"></i> PC Desktop
+                </span>
+            </div>
+        </div>
+
         <header class="mobile-login-hero">
             <div class="mobile-hero-badge-wrap">
                 <i class="fa-solid fa-sparkles"></i>
-                <span>Enterprise Mobile ERP 2.0</span>
+                <span>💻 PC Desktop Web ERP (สำหรับคอมพิวเตอร์)</span>
             </div>
             
             <img src="<?php echo $base_url; ?>/uploads/logo.png" alt="Logo" class="mobile-hero-logo">
@@ -754,6 +811,7 @@ $base_url = "/music-e-office";
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
 
+                <div class="mb-2"><span class="badge bg-light text-secondary border px-2.5 py-1" style="font-size: 0.72rem; letter-spacing: 0.02em;"><i class="fa-solid fa-desktop text-purple me-1"></i> เวอร์ชัน PC (Desktop ERP)</span></div>
                 <h2 class="erp-auth-heading">เข้าสู่ระบบปฏิบัติการ</h2>
                 <p class="erp-auth-subtitle">
                     ยืนยันตัวตนผ่านระบบ Single Sign-On (SSO) เพื่อเข้าถึงพื้นที่ทำงานของคุณ
@@ -789,7 +847,7 @@ $base_url = "/music-e-office";
 
             <div class="text-center mb-3">
                     <a href="../mobile/login.php?mobile=1" class="btn btn-sm btn-outline-purple rounded-pill px-3 py-1 extra-small fw-bold" style="border-color: rgba(57, 4, 143, 0.3); color: #39048f; background: rgba(57, 4, 143, 0.04); text-decoration: none;">
-                        <i class="fa-solid fa-mobile-screen-button me-1"></i> เข้าสู่ระบบฉบับ Mobile (Music MSU Connect)
+                        <i class="fa-solid fa-mobile-screen-button me-1"></i> สลับไปหน้าเข้าสู่ระบบเวอร์ชัน Mobile App (สำหรับมือถือ)
                     </a>
                 </div>
                 <div class="erp-auth-footer">
