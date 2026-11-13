@@ -282,9 +282,43 @@ require_once '../../includes/sidebar.php';
         
         <?php
         $is_duriyang = (mb_strpos($req['std_major'] ?? '', 'ดุริยางค') !== false);
-        $head_name = $is_duriyang ? 'ผู้ช่วยศาสตราจารย์อรรคพงศ์ ภูลายยาว' : 'ดร.พิษณุ บุญศรีอนันต์';
+        $head_role = $is_duriyang ? 'หัวหน้าภาควิชาดุริยางคศาสตร์' : 'หัวหน้าภาควิชาดนตรีศึกษา';
         $head_title = $is_duriyang ? '3. หัวหน้าภาควิชาดุริยางคศาสตร์' : '3. หัวหน้าภาควิชาดนตรีศึกษา';
-        $head_sig = $is_duriyang ? 'sig_6b8fba36220e1_1777452753.png' : 'sig_34ee8171_1774328264.png';
+        $default_head_id = $is_duriyang ? '6b8fba36220e1' : '6b8f3458220e1';
+
+        // ดึงข้อมูลหัวหน้าภาควิชาจากฐานข้อมูลจริง
+        $head_user = null;
+        try {
+            $stmt_head = $pdo->prepare("
+                SELECT u.user_id, u.prefix_name, u.first_name, u.last_name, u.signature_file 
+                FROM users u
+                JOIN user_roles ur ON u.user_id = ur.user_id
+                JOIN roles r ON ur.role_id = r.role_id
+                WHERE r.role_name = ?
+                LIMIT 1
+            ");
+            $stmt_head->execute([$head_role]);
+            $head_user = $stmt_head->fetch(PDO::FETCH_ASSOC);
+
+            if (!$head_user) {
+                $stmt_head2 = $pdo->prepare("SELECT user_id, prefix_name, first_name, last_name, signature_file FROM users WHERE user_id = ?");
+                $stmt_head2->execute([$default_head_id]);
+                $head_user = $stmt_head2->fetch(PDO::FETCH_ASSOC);
+            }
+        } catch (\Exception $e) {}
+
+        if ($head_user) {
+            $head_name = trim(($head_user['prefix_name'] ?? '') . $head_user['first_name'] . ' ' . $head_user['last_name']);
+            $head_sig = !empty($head_user['signature_file']) ? $head_user['signature_file'] : null;
+        } else {
+            $head_name = $is_duriyang ? 'ผู้ช่วยศาสตราจารย์อรรคพงศ์ ภูลายยาว' : 'ดร.พิษณุ บุญศรีอนันต์';
+            $head_sig = null;
+        }
+
+        // ลายเซ็นต์เริ่มต้นสำหรับ ผศ.อรรคพงศ์ ภูลายยาว (ดุริยางคศาสตร์) หากใน DB ยังไม่ได้อัปโหลด
+        if ($is_duriyang && empty($head_sig)) {
+            $head_sig = 'sig_6b8fba36220e1_1777452753.png';
+        }
 
         $flow_steps = [
             1 => [
@@ -292,7 +326,7 @@ require_once '../../includes/sidebar.php';
                 'title' => '1. อาจารย์ผู้สอน / ประสานงาน',
                 'name' => ($req['inst_prefix'] ?? '') . ($req['inst_fname'] ?? '') . ' ' . ($req['inst_lname'] ?? ''),
                 'comment' => $req['instructor_comment'],
-                'sig' => $req['inst_sig'] ?? 'sig_6b8eb1d6220e1_1775535261.png',
+                'sig' => !empty($req['inst_sig']) ? $req['inst_sig'] : null,
                 'approved_at' => $req['instructor_approved_at'] ?? null
             ],
             2 => [
@@ -300,7 +334,7 @@ require_once '../../includes/sidebar.php';
                 'title' => '2. อาจารย์ที่ปรึกษา',
                 'name' => ($req['adv_prefix'] ?? '') . ($req['adv_fname'] ?? '') . ' ' . ($req['adv_lname'] ?? ''),
                 'comment' => $req['advisor_comment'],
-                'sig' => $req['adv_sig'] ?? 'sig_6b8f3854220e1_1777092753.png',
+                'sig' => !empty($req['adv_sig']) ? $req['adv_sig'] : null,
                 'approved_at' => $req['advisor_approved_at'] ?? null
             ],
             3 => [
@@ -370,9 +404,19 @@ require_once '../../includes/sidebar.php';
                         </div>
                         <div class="fw-semibold small text-dark"><?= htmlspecialchars($step['name']); ?></div>
 
-                        <?php if (($is_passed || $req['status'] === 'approved' || $is_rejected_here) && !empty($step['sig'])): ?>
-                            <div class="my-2 py-1 px-1 text-center bg-white rounded-3 border shadow-2xs">
-                                <img src="/music-e-office/uploads/signatures/<?= htmlspecialchars($step['sig']); ?>" style="max-height: 38px; max-width: 110px; object-fit: contain;" alt="ลายเซ็น">
+                        <?php 
+                        $sig_file_path = !empty($step['sig']) ? (__DIR__ . '/../../uploads/signatures/' . $step['sig']) : '';
+                        $has_sig_file = !empty($sig_file_path) && file_exists($sig_file_path);
+                        if ($is_passed || $req['status'] === 'approved' || $is_rejected_here): 
+                        ?>
+                            <div class="my-2 py-1 px-2 text-center bg-white rounded-3 border shadow-2xs">
+                                <?php if ($has_sig_file): ?>
+                                    <img src="/music-e-office/uploads/signatures/<?= htmlspecialchars($step['sig']); ?>" style="max-height: 38px; max-width: 110px; object-fit: contain;" alt="ลายเซ็น">
+                                <?php else: ?>
+                                    <div class="text-<?= $is_rejected_here ? 'danger' : 'success'; ?> fw-bold extra-small py-1" style="font-size: 0.72rem;">
+                                        <i class="fa-solid fa-<?= $is_rejected_here ? 'circle-xmark' : 'certificate'; ?> me-1"></i><?= $is_rejected_here ? 'บันทึกไม่อนุมัติ' : 'อนุมัติทางอิเล็กทรอนิกส์'; ?>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="text-muted extra-small mt-1 border-top pt-1" style="font-size: 0.68rem; line-height: 1.2;">
                                     <?php if ($is_rejected_here): ?>
                                         <i class="fa-solid fa-circle-xmark text-danger me-1"></i>ไม่อนุมัติ: <?= formatThaiDT(!empty($step['approved_at']) ? $step['approved_at'] : $req['updated_at']); ?>
