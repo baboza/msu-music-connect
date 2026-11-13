@@ -45,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sort_order = (int)($_POST['sort_order'] ?? 0);
             $enable_sound = isset($_POST['enable_sound']) ? (int)$_POST['enable_sound'] : null;
 
+            $start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+            $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
+
             $sqlApprove = "
                 UPDATE pr_signage_items 
                 SET status = 'approved',
@@ -64,11 +67,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sqlApprove .= ", enable_sound = :sound ";
                 $paramsApprove[':sound'] = $enable_sound;
             }
+            if ($start_date && $end_date) {
+                $sqlApprove .= ", start_date = :sdate, end_date = :edate ";
+                $paramsApprove[':sdate'] = $start_date;
+                $paramsApprove[':edate'] = $end_date;
+            }
             $sqlApprove .= " WHERE item_id = :id ";
 
             $stmt = $pdo->prepare($sqlApprove);
             $stmt->execute($paramsApprove);
             $action_msg = 'approved';
+        } elseif ($action === 'restore_pending') {
+            $stmt = $pdo->prepare("
+                UPDATE pr_signage_items 
+                SET status = 'pending',
+                    reject_reason = NULL,
+                    approved_by = NULL,
+                    approved_at = NULL
+                WHERE item_id = :id
+            ");
+            $stmt->execute([':id' => $itemId]);
+            $action_msg = 'restored_pending';
         } elseif ($action === 'reject') {
             $reason = trim($_POST['reject_reason'] ?? '');
             if (empty($reason)) {
@@ -166,6 +185,12 @@ require_once '../../includes/sidebar.php';
             <strong>ยกเลิก/ปฏิเสธคำขอเรียบร้อยแล้ว</strong> ได้บันทึกเหตุผลแจ้งให้ผู้ส่งทราบแล้ว
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+    <?php elseif ($action_msg === 'restored_pending'): ?>
+        <div class="alert badge-purple-soft alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="fa-solid fa-rotate-left me-2 fs-5 text-purple"></i>
+            <strong>ส่งคำขอกลับไปสถานะ "รอพิจารณาอนุมัติ" เรียบร้อยแล้ว!</strong> สามารถตรวจสอบและดำเนินการอนุมัติต่อไปได้
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     <?php endif; ?>
 
     <!-- Status Tabs Segmented (Purple & White) -->
@@ -221,7 +246,7 @@ require_once '../../includes/sidebar.php';
                                 <th style="width: 120px;">เป้าหมายจอ</th>
                                 <th style="width: 170px;">ช่วงเวลาแสดงผล</th>
                                 <th style="width: 130px;" class="text-center">สถานะ</th>
-                                <th style="width: 220px;" class="text-end pe-4">การพิจารณา</th>
+                                <th style="width: 260px;" class="text-end pe-4">การพิจารณา</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -310,7 +335,7 @@ require_once '../../includes/sidebar.php';
 
                                             <?php if ($item['status'] === 'pending'): ?>
                                                 <!-- Approve Button -->
-                                                <button type="button" class="btn btn-sm btn-success px-3 fw-semibold border-0" onclick="openApproveModal(<?= $item['item_id'] ?>, '<?= htmlspecialchars(addslashes($item['title'])) ?>', <?= $item['duration_seconds'] ?>, <?= $item['sort_order'] ?>, '<?= $item['media_type'] ?>', <?= (int)($item['enable_sound'] ?? 0) ?>)">
+                                                <button type="button" class="btn btn-sm btn-success px-3 fw-semibold border-0" onclick="openApproveModal(<?= $item['item_id'] ?>, '<?= htmlspecialchars(addslashes($item['title'])) ?>', <?= $item['duration_seconds'] ?>, <?= $item['sort_order'] ?>, '<?= $item['media_type'] ?>', <?= (int)($item['enable_sound'] ?? 0) ?>, '<?= $item['start_date'] ?>', '<?= $item['end_date'] ?>', false)">
                                                     <i class="fa-solid fa-check me-1"></i> อนุมัติ
                                                 </button>
                                                 <!-- Reject Button -->
@@ -323,9 +348,21 @@ require_once '../../includes/sidebar.php';
                                                     <i class="fa-solid fa-ban me-1"></i> สั่งยกเลิก
                                                 </button>
                                             <?php elseif ($item['status'] === 'rejected'): ?>
+                                                <!-- นำกลับมาใช้งาน (อนุมัติขึ้นจออีกครั้ง) -->
+                                                <button type="button" class="btn btn-sm btn-success px-3 fw-semibold border-0" onclick="openApproveModal(<?= $item['item_id'] ?>, '<?= htmlspecialchars(addslashes($item['title'])) ?>', <?= $item['duration_seconds'] ?>, <?= $item['sort_order'] ?>, '<?= $item['media_type'] ?>', <?= (int)($item['enable_sound'] ?? 0) ?>, '<?= $item['start_date'] ?>', '<?= $item['end_date'] ?>', true)" title="นำกลับมาใช้งาน / อนุมัติขึ้นจอ">
+                                                    <i class="fa-solid fa-rotate-left me-1"></i> นำกลับมาใช้งาน
+                                                </button>
+                                                <!-- ส่งกลับไปรอพิจารณาใหม่ -->
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('ต้องการส่งคำขอนี้กลับไปที่แท็บ \'รอพิจารณาอนุมัติ\' ใช่หรือไม่?');">
+                                                    <input type="hidden" name="action" value="restore_pending">
+                                                    <input type="hidden" name="item_id" value="<?= $item['item_id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-purple px-2 border-0" title="ส่งกลับไปรอพิจารณาใหม่">
+                                                        <i class="fa-solid fa-hourglass-half"></i>
+                                                    </button>
+                                                </form>
                                                 <!-- ดูเหตุผลที่ปฏิเสธ -->
-                                                <button type="button" class="btn btn-sm btn-light border-0 px-3 text-secondary" onclick="alert('เหตุผลการยกเลิก: <?= htmlspecialchars(addslashes($item['reject_reason'] ?? 'ไม่ระบุ')) ?>')">
-                                                    <i class="fa-solid fa-comment-dots me-1 text-purple"></i> เหตุผล
+                                                <button type="button" class="btn btn-sm btn-light border-0 px-2 text-secondary" onclick="alert('เหตุผลการยกเลิกเดิม: <?= htmlspecialchars(addslashes($item['reject_reason'] ?? 'ไม่ระบุ')) ?>')" title="ดูเหตุผลที่เคยยกเลิก">
+                                                    <i class="fa-solid fa-comment-dots text-purple"></i>
                                                 </button>
                                             <?php endif; ?>
                                         </div>
@@ -349,7 +386,7 @@ require_once '../../includes/sidebar.php';
             <input type="hidden" name="item_id" id="approve_item_id">
 
             <div class="modal-header border-0 bg-success bg-opacity-10 py-3">
-                <h5 class="modal-title fw-bold text-success">
+                <h5 class="modal-title fw-bold text-success" id="approveModalTitle">
                     <i class="fa-solid fa-circle-check me-2"></i>ยืนยันการอนุมัติป้ายประชาสัมพันธ์
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -358,6 +395,17 @@ require_once '../../includes/sidebar.php';
                 <div class="mb-3">
                     <label class="form-label text-muted small mb-1">หัวข้อประชาสัมพันธ์</label>
                     <div class="fw-bold fs-6 text-dark" id="approve_item_title"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold small text-dark"><i class="fa-regular fa-calendar-check text-purple me-1"></i>วันที่เริ่มแสดงผล</label>
+                        <input type="date" name="start_date" id="approve_start_date" class="form-control rounded-3" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold small text-dark"><i class="fa-regular fa-calendar-xmark text-purple me-1"></i>วันที่สิ้นสุด</label>
+                        <input type="date" name="end_date" id="approve_end_date" class="form-control rounded-3" required>
+                    </div>
                 </div>
 
                 <div class="row g-3 mb-3">
@@ -392,7 +440,7 @@ require_once '../../includes/sidebar.php';
             </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
+                <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" id="approveSubmitBtn">
                     <i class="fa-solid fa-check me-1"></i> ยืนยันอนุมัติขึ้นจอ
                 </button>
             </div>
@@ -451,11 +499,39 @@ require_once '../../includes/sidebar.php';
 </div>
 
 <script>
-    function openApproveModal(id, title, duration, sort, mediaType, enableSound) {
+    function openApproveModal(id, title, duration, sort, mediaType, enableSound, startDate, endDate, isRestore) {
         document.getElementById('approve_item_id').value = id;
         document.getElementById('approve_item_title').textContent = title;
         document.getElementById('approve_duration').value = duration || 10;
         document.getElementById('approve_sort').value = sort || 0;
+
+        // Dynamic Title & Button text
+        const modalTitle = document.getElementById('approveModalTitle');
+        const submitBtn = document.getElementById('approveSubmitBtn');
+        if (isRestore) {
+            if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-rotate-left me-2"></i>ยืนยันนำป้ายประชาสัมพันธ์กลับมาใช้งาน';
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-rotate-left me-1"></i> ยืนยันนำกลับมาใช้งาน';
+        } else {
+            if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i>ยืนยันการอนุมัติป้ายประชาสัมพันธ์';
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> ยืนยันอนุมัติขึ้นจอ';
+        }
+
+        // Date handling (auto extend if expired)
+        const today = new Date().toISOString().split('T')[0];
+        let sDate = startDate || today;
+        let eDate = endDate || today;
+
+        if (isRestore && eDate < today) {
+            sDate = today;
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            eDate = nextWeek.toISOString().split('T')[0];
+        }
+
+        const sInput = document.getElementById('approve_start_date');
+        const eInput = document.getElementById('approve_end_date');
+        if (sInput) sInput.value = sDate;
+        if (eInput) eInput.value = eDate;
 
         const soundBox = document.getElementById('approve_sound_container');
         if (mediaType === 'youtube') {
