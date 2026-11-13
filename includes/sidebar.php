@@ -291,6 +291,11 @@ $can_view_admin_section    = hasRole(['admin']);
                     <span>จอง Zoom</span>
                 </a>
 
+                <a class="nav-link-simple <?php echo strpos($_SERVER['PHP_SELF'], 'modules/vehicle_booking/') !== false ? 'active' : ''; ?>" href="<?php echo $base_url; ?>/modules/vehicle_booking/index.php">
+                    <span class="nav-icon-box"><i class="fa-solid fa-car-side"></i></span>
+                    <span>จองรถวิทยาลัย</span>
+                </a>
+
                 <a class="nav-link-simple <?php echo (strpos($_SERVER['PHP_SELF'], 'modules/qrcode/') !== false && !isActive('dashboard.php')) ? 'active' : ''; ?>" href="<?php echo $base_url; ?>/modules/qrcode/">
                     <span class="nav-icon-box"><i class="fa-solid fa-qrcode"></i></span>
                     <span>สร้าง QR Code</span>

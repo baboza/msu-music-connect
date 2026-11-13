@@ -442,6 +442,14 @@ if (!function_exists('getStarIcon')) {
                                     </div>
                                     <?php endif; ?>
 
+                                    <div class="col-sm-6 col-lg-4 app-item">
+                                        <?php echo getStarIcon('module_vehicle_booking'); ?>
+                                        <a href="<?php echo $base_url; ?>/modules/vehicle_booking/index.php" class="app-card text-decoration-none d-flex align-items-center p-3 rounded-4 shadow-sm border bg-white h-100">
+                                            <div class="app-icon bg-purple-subtle text-purple me-3"><i class="fa-solid fa-car-side"></i></div>
+                                            <div class="fw-bold text-dark small">ระบบจองรถวิทยาลัย</div>
+                                        </a>
+                                    </div>
+
                                     <?php if(hasRole($practice_admin_roles)): ?>
                                     <div class="col-sm-6 col-lg-4 app-item">
                                         <?php echo getStarIcon('practice_rooms'); ?>
