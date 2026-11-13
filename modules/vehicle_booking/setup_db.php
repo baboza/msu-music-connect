@@ -30,9 +30,12 @@ try {
         $pdo->exec("
         INSERT INTO `vehicles` (`plate_number`, `brand`, `model`, `year_made`, `vehicle_type`, `seating_capacity`, `fuel_type`, `current_odometer`, `status`, `notes`) VALUES
         ('นข-2026 มหาสารคาม', 'Toyota', 'Toyota Commuter VIP 2026', 2026, 'passenger', 13, 'ดีเซล B7', 15200, 'available', 'รถตู้ปรับอากาศ VIP ประจำวิทยาลัยดุริยางคศิลป์ สำหรับรับส่งผู้บริหาร อาจารย์ นิสิต และภารกิจทั่วไป'),
-        ('บพ-2569 มหาสารคาม', 'Toyota', 'Toyota Hilux Revo ตู้บรรทุกเครื่องดนตรี', 2025, 'cargo_instruments', 3, 'ดีเซล', 28450, 'available', 'รถยนต์บรรทุกตู้ทึบดัดแปลงพิเศษ ติดตั้งแร็คและสายรัด สำหรับขนย้ายเครื่องดนตรีวงดุริยางค์ เครื่องดนตรีไทย-สากล และอุปกรณ์การแสดง')
+        ('บพ-2569 มหาสารคาม', 'Toyota', 'Toyota ตู้บรรทุกเครื่องดนตรี', 2025, 'cargo_instruments', 3, 'ดีเซล', 28450, 'available', 'รถยนต์บรรทุกตู้ทึบดัดแปลงพิเศษ ติดตั้งแร็คและสายรัด สำหรับขนย้ายเครื่องดนตรีวงดุริยางค์ เครื่องดนตรีไทย-สากล และอุปกรณ์การแสดง')
         ");
     }
+
+    // อัปเดตรุ่นของรถบรรทุกเครื่องดนตรีให้ตรงกับความต้องการ (นำคำว่า Hilux Revo ออก)
+    $pdo->exec("UPDATE `vehicles` SET `model` = 'Toyota ตู้บรรทุกเครื่องดนตรี' WHERE `model` LIKE '%Hilux Revo%'");
 
     // 2. ตารางคำขอใช้รถ (Vehicle Bookings)
     $pdo->exec("
