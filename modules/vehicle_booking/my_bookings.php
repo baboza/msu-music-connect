@@ -8,6 +8,9 @@ require_once 'setup_db.php';
 require_once 'helpers.php';
 
 $current_user_id = $_SESSION['user_id'] ?? '';
+$user_roles = $_SESSION['roles'] ?? [];
+$is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
 $status_filter = $_GET['status'] ?? 'all';
 
 $sql = "
@@ -50,7 +53,12 @@ require_once '../../includes/sidebar.php';
                 ติดตามผลการพิจารณา 3 ลำดับขั้น พิมพ์ใบขอใช้รถ และบันทึกผลการเดินทาง
             </p>
         </div>
-        <div>
+        <div class="d-flex flex-wrap gap-2">
+            <?php if ($is_admin || $is_supply): ?>
+                <a href="approve_list.php" class="btn btn-outline-warning text-dark rounded-pill px-3 fw-semibold">
+                    <i class="fa-solid fa-stamp text-warning me-1"></i> ศูนย์พิจารณาอนุมัติ
+                </a>
+            <?php endif; ?>
             <a href="create.php" class="btn btn-purple rounded-pill px-4 fw-bold shadow-sm">
                 <i class="fa-solid fa-plus me-1"></i> ขอใช้รถใหม่
             </a>

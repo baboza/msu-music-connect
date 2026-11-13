@@ -10,9 +10,29 @@ require_once 'helpers.php';
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
 $is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
 $is_head_office = in_array('หัวหน้าสำนักงาน', $user_roles) || $current_user_id === '34ee8171';
 $is_deputy_admin = in_array('รองคณบดีฝ่ายบริหาร', $user_roles) || $current_user_id === '86580da6';
-$can_manage = $is_admin || $is_head_office || $is_deputy_admin;
+$can_manage = $is_admin || $is_supply || $is_head_office || $is_deputy_admin;
+
+// จัดการบันทึกแก้ไขข้อมูลและสถานะรถ (เฉพาะ Admin และ งานพัสดุ)
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_vehicle') {
+    if ($is_admin || $is_supply) {
+        $veh_id = (int)($_POST['vehicle_id'] ?? 0);
+        $status = $_POST['status'] ?? 'available';
+        $odo = (int)($_POST['current_odometer'] ?? 0);
+        $notes = trim($_POST['notes'] ?? '');
+        $seating = max(1, (int)($_POST['seating_capacity'] ?? 1));
+        $fuel = trim($_POST['fuel_type'] ?? '');
+
+        $stmt_up_veh = $pdo->prepare("UPDATE vehicles SET status = ?, current_odometer = ?, notes = ?, seating_capacity = ?, fuel_type = ? WHERE vehicle_id = ?");
+        $stmt_up_veh->execute([$status, $odo, $notes, $seating, $fuel, $veh_id]);
+        $_SESSION['msg'] = 'อัปเดตข้อมูลและสถานะรถเรียบร้อยแล้ว';
+        $_SESSION['msg_type'] = 'success';
+        header("Location: index.php");
+        exit();
+    }
+}
 
 // ฟิลเตอร์
 $filter_vehicle = isset($_GET['vehicle_id']) ? (int)$_GET['vehicle_id'] : 0;
@@ -210,9 +230,21 @@ require_once '../../includes/sidebar.php';
                                     <span class="ms-2"><i class="fa-solid fa-calendar me-1 text-purple"></i>ปี <?= htmlspecialchars($veh['year_made']) ?></span>
                                 </div>
                             </div>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
-                                <i class="fa-solid fa-circle-dot me-1"></i> พร้อมใช้งาน
-                            </span>
+                            <?php
+                            $v_status = $veh['status'] ?? 'available';
+                            if ($v_status === 'maintenance'): ?>
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill small">
+                                    <i class="fa-solid fa-wrench me-1"></i> เข้าศูนย์ / ซ่อมบำรุง
+                                </span>
+                            <?php elseif ($v_status === 'unavailable'): ?>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill small">
+                                    <i class="fa-solid fa-ban me-1"></i> งดใช้งานชั่วคราว
+                                </span>
+                            <?php else: ?>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small">
+                                    <i class="fa-solid fa-circle-dot me-1"></i> พร้อมใช้งาน
+                                </span>
+                            <?php endif; ?>
                         </div>
 
                         <p class="text-muted small mb-3" style="line-height: 1.6;">
@@ -234,11 +266,16 @@ require_once '../../includes/sidebar.php';
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <a href="create.php?vehicle_id=<?= $veh['vehicle_id'] ?>" class="btn btn-purple rounded-pill px-4 fw-semibold shadow-2xs">
                                 <i class="fa-solid fa-calendar-plus me-1"></i> จองคันนี้
                             </a>
                             <div class="d-flex gap-2">
+                                <?php if ($is_admin || $is_supply): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-purple rounded-pill px-3 fw-semibold" onclick='openEditVehicleModal(<?= htmlspecialchars(json_encode($veh), ENT_QUOTES, 'UTF-8') ?>)' title="จัดการข้อมูลและสถานะรถ (งานพัสดุ)">
+                                        <i class="fa-solid fa-screwdriver-wrench me-1"></i> จัดการรถ
+                                    </button>
+                                <?php endif; ?>
                                 <a href="inspection.php?vehicle_id=<?= $veh['vehicle_id'] ?>" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="ตรวจเช็คสภาพรถ">
                                     <i class="fa-solid fa-clipboard-check me-1"></i> ตรวจสภาพ
                                 </a>
@@ -436,5 +473,80 @@ require_once '../../includes/sidebar.php';
     </div>
 
 </main>
+
+<?php if ($is_admin || $is_supply): ?>
+<!-- Modal จัดการข้อมูลและสถานะรถ (งานพัสดุ & ผู้ดูแล) -->
+<div class="modal fade" id="manageVehicleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content rounded-4 border-0 shadow">
+            <input type="hidden" name="action" value="update_vehicle">
+            <input type="hidden" name="vehicle_id" id="edit_veh_id">
+
+            <div class="modal-header border-0 bg-purple bg-opacity-10 py-3">
+                <h5 class="modal-title fw-bold text-purple">
+                    <i class="fa-solid fa-screwdriver-wrench me-2"></i>จัดการข้อมูลและสถานะรถ (งานพัสดุ)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">รุ่นรถ / ทะเบียน</label>
+                    <input type="text" id="edit_veh_model_display" class="form-control rounded-3 bg-light fw-semibold" readonly>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">สถานะความพร้อม <span class="text-danger">*</span></label>
+                        <select name="status" id="edit_veh_status" class="form-select rounded-3" required>
+                            <option value="available">✓ พร้อมใช้งาน (Available)</option>
+                            <option value="maintenance">⚠ ซ่อมบำรุง / เข้าศูนย์ (Maintenance)</option>
+                            <option value="unavailable">✗ งดใช้งานชั่วคราว (Unavailable)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">เลขไมล์สะสมล่าสุด (กม.) <span class="text-danger">*</span></label>
+                        <input type="number" name="current_odometer" id="edit_veh_odometer" class="form-control rounded-3" required min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">ความจุผู้โดยสาร (ที่นั่ง)</label>
+                        <input type="number" name="seating_capacity" id="edit_veh_seating" class="form-control rounded-3" min="1" max="50">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">ชนิดเชื้อเพลิง</label>
+                        <input type="text" name="fuel_type" id="edit_veh_fuel" class="form-control rounded-3" placeholder="เช่น ดีเซล B7">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">หมายเหตุ / ข้อมูลการบำรุงรักษา</label>
+                    <textarea name="notes" id="edit_veh_notes" class="form-control rounded-3" rows="3" placeholder="ระบุบันทึกรายละเอียด เช่น เข้าเช็คระยะ 30,000 กม. เปลี่ยนถ่ายน้ำมันเครื่องแล้ว"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 bg-light py-3 px-4">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-purple rounded-pill px-4 fw-bold">
+                    <i class="fa-solid fa-save me-1"></i> บันทึกข้อมูล
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditVehicleModal(veh) {
+    document.getElementById('edit_veh_id').value = veh.vehicle_id;
+    document.getElementById('edit_veh_model_display').value = veh.model + ' (ทะเบียน: ' + veh.plate_number + ')';
+    document.getElementById('edit_veh_status').value = veh.status || 'available';
+    document.getElementById('edit_veh_odometer').value = veh.current_odometer || 0;
+    document.getElementById('edit_veh_seating').value = veh.seating_capacity || 1;
+    document.getElementById('edit_veh_fuel').value = veh.fuel_type || '';
+    document.getElementById('edit_veh_notes').value = veh.notes || '';
+
+    new bootstrap.Modal(document.getElementById('manageVehicleModal')).show();
+}
+</script>
+<?php endif; ?>
 
 <?php require_once '../../includes/footer.php'; ?>

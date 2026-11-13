@@ -10,6 +10,8 @@ require_once 'helpers.php';
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
 $is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
+$can_manage_log = $is_admin || $is_supply;
 
 // รับ parameter booking_id สำหรับเปิดฟอร์มบันทึกด่วน
 $preselect_booking_id = (int)($_GET['booking_id'] ?? 0);
@@ -17,6 +19,18 @@ $filter_vehicle = (int)($_GET['vehicle_id'] ?? 0);
 
 $msg = '';
 $msg_type = '';
+
+// Handle POST ลบบันทึกการเดินทาง (สำหรับ Admin & งานพัสดุ)
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_trip_log') {
+    if ($can_manage_log) {
+        $log_id = (int)($_POST['log_id'] ?? 0);
+        $pdo->prepare("DELETE FROM vehicle_trip_logs WHERE log_id = ?")->execute([$log_id]);
+        $_SESSION['msg'] = 'ลบบันทึกประวัติการเดินทางเรียบร้อยแล้ว';
+        $_SESSION['msg_type'] = 'warning';
+        header("Location: trip_logs.php");
+        exit();
+    }
+}
 
 // Handle POST บันทึกผลการเดินทาง / ค่าใช้จ่าย / อัตราสิ้นเปลือง
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_trip_log') {
@@ -399,9 +413,23 @@ require_once '../../includes/sidebar.php';
                                         <div class="extra-small text-muted"><?= number_format($lg['cost_per_km'], 2) ?> ฿/กม.</div>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" onclick="viewTripDetail(<?= htmlspecialchars(json_encode($lg)) ?>)">
-                                            <i class="fa-regular fa-eye text-purple"></i> บิล
-                                        </button>
+                                        <div class="d-inline-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2" onclick="viewTripDetail(<?= htmlspecialchars(json_encode($lg)) ?>)" title="ดูรายละเอียดค่าใช้จ่าย">
+                                                <i class="fa-regular fa-eye text-purple"></i>
+                                            </button>
+                                            <?php if ($can_manage_log): ?>
+                                                <button type="button" class="btn btn-sm btn-outline-purple rounded-pill px-2" onclick="editTripDetail(<?= htmlspecialchars(json_encode($lg)) ?>)" title="แก้ไขข้อมูลทริป (งานพัสดุ)">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('ยืนยันที่จะลบบันทึกประวัติการเดินทางนี้ใช่หรือไม่?');">
+                                                    <input type="hidden" name="action" value="delete_trip_log">
+                                                    <input type="hidden" name="log_id" value="<?= $lg['log_id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="ลบบันทึกนี้">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -605,6 +633,30 @@ function viewTripDetail(lg) {
     msg += `รวมทั้งสิ้น: ${lg.total_expenses} บาท\n`;
     msg += `อัตราสิ้นเปลือง: ${lg.fuel_consumption_rate} กม./ลิตร (${lg.cost_per_km} บาท/กม.)`;
     alert(msg);
+}
+
+function editTripDetail(lg) {
+    if (document.getElementById('modal_booking_select')) {
+        document.getElementById('modal_booking_select').value = lg.booking_id || 0;
+    }
+    if (document.getElementById('modal_veh_id')) {
+        document.getElementById('modal_veh_id').value = lg.vehicle_id;
+    }
+    if (document.getElementById('modal_driver_name')) {
+        document.getElementById('modal_driver_name').value = lg.driver_name || '';
+    }
+    document.getElementById('calc_start_odo').value = lg.start_odometer;
+    document.getElementById('calc_end_odo').value = lg.end_odometer;
+    document.getElementById('calc_fuel_liters').value = lg.fuel_liters;
+    document.getElementById('calc_fuel_cost').value = lg.fuel_cost;
+    document.getElementById('calc_toll_cost').value = lg.toll_cost;
+    document.getElementById('calc_parking_cost').value = lg.parking_cost;
+    document.getElementById('calc_allowance').value = lg.driver_allowance;
+    document.getElementById('calc_misc').value = lg.misc_cost;
+    var notesElem = document.querySelector('textarea[name="trip_notes"]');
+    if (notesElem) notesElem.value = lg.trip_notes || '';
+    calcTripMetrics();
+    new bootstrap.Modal(document.getElementById('tripLogModal')).show();
 }
 
 // Preselect trigger if loaded from url

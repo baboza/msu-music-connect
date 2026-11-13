@@ -10,11 +10,12 @@ require_once 'helpers.php';
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
 $is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
 $is_head_office = in_array('หัวหน้าสำนักงาน', $user_roles) || $current_user_id === '34ee8171';
 $is_deputy_admin = in_array('รองคณบดีฝ่ายบริหาร', $user_roles) || $current_user_id === '86580da6';
 
-if (!$is_admin && !$is_head_office && !$is_deputy_admin) {
-    echo "<script>alert('⛔ ปฏิเสธการเข้าถึง: หน้านี้สำหรับหัวหน้าสำนักงาน รองคณบดีฝ่ายบริหาร และผู้ดูแลระบบเท่านั้น'); window.location.href='index.php';</script>";
+if (!$is_admin && !$is_supply && !$is_head_office && !$is_deputy_admin) {
+    echo "<script>alert('⛔ ปฏิเสธการเข้าถึง: หน้านี้สำหรับงานพัสดุ หัวหน้าสำนักงาน รองคณบดีฝ่ายบริหาร และผู้ดูแลระบบเท่านั้น'); window.location.href='index.php';</script>";
     exit();
 }
 
@@ -33,7 +34,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $curr_st = $stmt_cur->fetchColumn();
 
         if ($action === 'approve') {
-            if ($curr_st === 'pending_head' && ($is_head_office || $is_admin)) {
+            if ($curr_st === 'pending_head' && ($is_head_office || $is_admin || $is_supply)) {
                 $stmt = $pdo->prepare("
                     UPDATE vehicle_bookings 
                     SET status = 'pending_deputy',
@@ -44,9 +45,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         updated_at = NOW()
                     WHERE booking_id = :id
                 ");
-                $stmt->execute([':comment' => $comment, ':uid' => $current_user_id, ':id' => $booking_id]);
+                $stmt->execute([':comment' => $comment ?: 'เห็นควรจัดรถตามขอ (งานพัสดุ/หัวหน้าสำนักงานตรวจสอบความพร้อมแล้ว)', ':uid' => $current_user_id, ':id' => $booking_id]);
                 $action_msg = 'approved_head';
-            } elseif ($curr_st === 'pending_deputy' && ($is_deputy_admin || $is_admin)) {
+            } elseif ($curr_st === 'pending_deputy' && ($is_deputy_admin || $is_admin || $is_supply)) {
                 $stmt = $pdo->prepare("
                     UPDATE vehicle_bookings 
                     SET status = 'approved',
@@ -57,9 +58,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         updated_at = NOW()
                     WHERE booking_id = :id
                 ");
-                $stmt->execute([':comment' => $comment, ':uid' => $current_user_id, ':id' => $booking_id]);
+                $stmt->execute([':comment' => $comment ?: 'อนุมัติการใช้รถยนต์ราชการ', ':uid' => $current_user_id, ':id' => $booking_id]);
                 $action_msg = 'approved_deputy';
-            } elseif ($curr_st === 'rejected' && ($is_admin || $is_deputy_admin || $is_head_office)) {
+            } elseif ($curr_st === 'rejected' && ($is_admin || $is_supply || $is_deputy_admin || $is_head_office)) {
                 // นำกลับมาใช้งาน (อนุมัติทันที)
                 $stmt = $pdo->prepare("
                     UPDATE vehicle_bookings 
@@ -71,44 +72,48 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         updated_at = NOW()
                     WHERE booking_id = :id
                 ");
-                $stmt->execute([':comment' => $comment ?: 'นำกลับมาใช้งานและอนุมัติการเดินทาง', ':uid' => $current_user_id, ':id' => $booking_id]);
+                $stmt->execute([':comment' => $comment ?: 'นำกลับมาใช้งานและอนุมัติการเดินทาง (งานพัสดุ)', ':uid' => $current_user_id, ':id' => $booking_id]);
                 $action_msg = 'restored_approved';
             }
         } elseif ($action === 'reject') {
-            $reason = !empty($comment) ? $comment : 'ไม่ผ่านเกณฑ์การพิจารณาหรือติดภารกิจอื่น';
-            $col_comment = ($curr_st === 'pending_head') ? 'head_comment' : 'deputy_comment';
-            $col_time = ($curr_st === 'pending_head') ? 'head_approved_at' : 'deputy_approved_at';
-            $col_by = ($curr_st === 'pending_head') ? 'head_approved_by' : 'deputy_approved_by';
+            if ($is_admin || $is_supply || $is_head_office || $is_deputy_admin) {
+                $reason = !empty($comment) ? $comment : 'ไม่ผ่านเกณฑ์การพิจารณาหรือติดภารกิจอื่น';
+                $col_comment = ($curr_st === 'pending_head') ? 'head_comment' : 'deputy_comment';
+                $col_time = ($curr_st === 'pending_head') ? 'head_approved_at' : 'deputy_approved_at';
+                $col_by = ($curr_st === 'pending_head') ? 'head_approved_by' : 'deputy_approved_by';
 
-            $stmt = $pdo->prepare("
-                UPDATE vehicle_bookings 
-                SET status = 'rejected',
-                    {$col_comment} = :comment,
-                    {$col_time} = NOW(),
-                    {$col_by} = :uid,
-                    reject_reason = :reason,
-                    updated_at = NOW()
-                WHERE booking_id = :id
-            ");
-            $stmt->execute([
-                ':comment' => $comment,
-                ':uid' => $current_user_id,
-                ':reason' => $reason,
-                ':id' => $booking_id
-            ]);
-            $action_msg = 'rejected';
+                $stmt = $pdo->prepare("
+                    UPDATE vehicle_bookings 
+                    SET status = 'rejected',
+                        {$col_comment} = :comment,
+                        {$col_time} = NOW(),
+                        {$col_by} = :uid,
+                        reject_reason = :reason,
+                        updated_at = NOW()
+                    WHERE booking_id = :id
+                ");
+                $stmt->execute([
+                    ':comment' => $comment,
+                    ':uid' => $current_user_id,
+                    ':reason' => $reason,
+                    ':id' => $booking_id
+                ]);
+                $action_msg = 'rejected';
+            }
         } elseif ($action === 'restore_pending') {
-            // ส่งกลับไปรอพิจารณาใหม่
-            $stmt = $pdo->prepare("
-                UPDATE vehicle_bookings 
-                SET status = 'pending_head',
-                    reject_reason = NULL,
-                    head_approved_at = NULL,
-                    deputy_approved_at = NULL
-                WHERE booking_id = :id
-            ");
-            $stmt->execute([':id' => $booking_id]);
-            $action_msg = 'restored_pending';
+            if ($is_admin || $is_supply || $is_head_office || $is_deputy_admin) {
+                // ส่งกลับไปรอพิจารณาใหม่
+                $stmt = $pdo->prepare("
+                    UPDATE vehicle_bookings 
+                    SET status = 'pending_head',
+                        reject_reason = NULL,
+                        head_approved_at = NULL,
+                        deputy_approved_at = NULL
+                    WHERE booking_id = :id
+                ");
+                $stmt->execute([':id' => $booking_id]);
+                $action_msg = 'restored_pending';
+            }
         }
     }
 }
@@ -133,9 +138,9 @@ $sql = "
 $params = [];
 
 if ($status_filter === 'pending') {
-    if ($is_head_office && !$is_admin && !$is_deputy_admin) {
+    if ($is_head_office && !$is_admin && !$is_deputy_admin && !$is_supply) {
         $sql .= " AND b.status = 'pending_head' ";
-    } elseif ($is_deputy_admin && !$is_admin && !$is_head_office) {
+    } elseif ($is_deputy_admin && !$is_admin && !$is_head_office && !$is_supply) {
         $sql .= " AND b.status = 'pending_deputy' ";
     } else {
         $sql .= " AND b.status IN ('pending_head', 'pending_deputy') ";

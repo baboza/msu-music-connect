@@ -9,12 +9,27 @@ require_once 'helpers.php';
 
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
+$is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
+$can_manage_insp = $is_admin || $is_supply;
 
 $filter_vehicle = (int)($_GET['vehicle_id'] ?? 0);
 $preselect_booking_id = (int)($_GET['booking_id'] ?? 0);
 
 $msg = '';
 $msg_type = '';
+
+// Handle POST ลบผลการตรวจเช็คสภาพรถ (สำหรับ Admin & งานพัสดุ)
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_inspection') {
+    if ($can_manage_insp) {
+        $insp_id = (int)($_POST['inspection_id'] ?? 0);
+        $pdo->prepare("DELETE FROM vehicle_inspections WHERE inspection_id = ?")->execute([$insp_id]);
+        $_SESSION['msg'] = 'ลบผลการตรวจเช็คสภาพรถเรียบร้อยแล้ว';
+        $_SESSION['msg_type'] = 'warning';
+        header("Location: inspection.php");
+        exit();
+    }
+}
 
 // Handle POST บันทึกการตรวจเช็คสภาพรถ
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_inspection') {
@@ -274,13 +289,24 @@ require_once '../../includes/sidebar.php';
                                         </span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <?php if (!empty($insp['defect_notes'])): ?>
-                                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2" onclick="alert('ข้อสังเกต / อาการผิดปกติ:\n<?= htmlspecialchars(addslashes($insp['defect_notes'])) ?>')">
-                                                <i class="fa-solid fa-comment-dots text-warning"></i>
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="text-muted extra-small">ปกติ</span>
-                                        <?php endif; ?>
+                                        <div class="d-inline-flex gap-1 align-items-center">
+                                            <?php if (!empty($insp['defect_notes'])): ?>
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2" onclick="alert('ข้อสังเกต / อาการผิดปกติ:\n<?= htmlspecialchars(addslashes($insp['defect_notes'])) ?>')" title="ดูข้อสังเกต">
+                                                    <i class="fa-solid fa-comment-dots text-warning"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <span class="text-muted extra-small me-1">ปกติ</span>
+                                            <?php endif; ?>
+                                            <?php if ($can_manage_insp): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('ยืนยันที่จะลบผลการตรวจเช็คสภาพรถรายการนี้ใช่หรือไม่?');">
+                                                    <input type="hidden" name="action" value="delete_inspection">
+                                                    <input type="hidden" name="inspection_id" value="<?= $insp['inspection_id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="ลบผลการตรวจนี้">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

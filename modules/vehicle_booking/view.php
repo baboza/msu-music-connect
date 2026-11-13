@@ -10,8 +10,10 @@ require_once 'helpers.php';
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
 $is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
 $is_head_office = in_array('หัวหน้าสำนักงาน', $user_roles) || $current_user_id === '34ee8171';
 $is_deputy_admin = in_array('รองคณบดีฝ่ายบริหาร', $user_roles) || $current_user_id === '86580da6';
+$can_manage_all = $is_admin || $is_supply;
 
 $booking_id = (int)($_GET['id'] ?? 0);
 if ($booking_id <= 0) {
@@ -49,17 +51,17 @@ $can_approve = false;
 $step_role_title = '';
 $next_status = '';
 
-if ($cur_status === 'pending_head' && ($is_head_office || $is_admin)) {
+if ($cur_status === 'pending_head' && ($is_head_office || $is_admin || $is_supply)) {
     $can_approve = true;
-    $step_role_title = 'หัวหน้าสำนักงานเลขานุการ';
+    $step_role_title = $is_supply ? 'งานพัสดุ / หัวหน้าสำนักงาน' : 'หัวหน้าสำนักงานเลขานุการ';
     $next_status = 'pending_deputy';
-} elseif ($cur_status === 'pending_deputy' && ($is_deputy_admin || $is_admin)) {
+} elseif ($cur_status === 'pending_deputy' && ($is_deputy_admin || $is_admin || $is_supply)) {
     $can_approve = true;
-    $step_role_title = 'รองคณบดีฝ่ายบริหาร';
+    $step_role_title = $is_supply ? 'งานพัสดุ / รองคณบดีฝ่ายบริหาร' : 'รองคณบดีฝ่ายบริหาร';
     $next_status = 'approved';
 }
 
-// จัดการบันทึกการพิจารณา (POST)
+// จัดการบันทึกการพิจารณา และการจัดการจัดรถ (POST)
 $msg = '';
 $msg_type = '';
 
@@ -67,9 +69,52 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $comment = trim($_POST['comment'] ?? '');
 
-    if ($action === 'cancel_by_user' && $is_owner && in_array($cur_status, ['pending_head', 'pending_deputy'])) {
-        $stmt_cancel = $pdo->prepare("UPDATE vehicle_bookings SET status = 'cancelled', reject_reason = 'ผู้ขอยกเลิกคำขอเอง', updated_at = NOW() WHERE booking_id = ?");
-        $stmt_cancel->execute([$booking_id]);
+    if ($action === 'manage_dispatch' && $can_manage_all) {
+        $new_veh_id = (int)($_POST['vehicle_id'] ?? 0);
+        $new_driver_type = $_POST['driver_type'] ?? 'driver_assigned';
+        $new_driver_id = !empty($_POST['driver_id']) ? $_POST['driver_id'] : null;
+        $new_driver_name = trim($_POST['driver_name'] ?? '');
+        $new_status = $_POST['status'] ?? $cur_status;
+
+        $stmt_disp = $pdo->prepare("UPDATE vehicle_bookings SET vehicle_id = ?, driver_type = ?, driver_id = ?, driver_name = ?, status = ?, updated_at = NOW() WHERE booking_id = ?");
+        $stmt_disp->execute([$new_veh_id, $new_driver_type, $new_driver_id, $new_driver_name, $new_status, $booking_id]);
+        $_SESSION['msg'] = 'ปรับปรุงการจัดรถ คนขับ และสถานะคำขอเรียบร้อยแล้ว (งานพัสดุ)';
+        $_SESSION['msg_type'] = 'success';
+        header("Location: view.php?id=" . $booking_id);
+        exit();
+    } elseif ($action === 'delete_booking' && $can_manage_all) {
+        $stmt_del = $pdo->prepare("DELETE FROM vehicle_bookings WHERE booking_id = ?");
+        $stmt_del->execute([$booking_id]);
+        $_SESSION['msg'] = 'ลบคำขอใช้รถเรียบร้อยแล้ว';
+        $_SESSION['msg_type'] = 'warning';
+        header("Location: index.php");
+        exit();
+    } elseif ($action === 'restore_approved' && ($is_admin || $is_supply || $is_deputy_admin || $is_head_office)) {
+        $stmt_rst = $pdo->prepare("
+            UPDATE vehicle_bookings 
+            SET status = 'approved',
+                deputy_comment = :comment,
+                deputy_approved_at = NOW(),
+                deputy_approved_by = :uid,
+                reject_reason = NULL,
+                updated_at = NOW()
+            WHERE booking_id = :id
+        ");
+        $stmt_rst->execute([
+            ':comment' => $comment ?: 'นำกลับมาใช้งานและอนุมัติการเดินทาง (งานพัสดุ)',
+            ':uid' => $current_user_id,
+            ':id' => $booking_id
+        ]);
+        $_SESSION['msg'] = 'นำคำขอกลับมาใช้งานและอนุมัติเรียบร้อยแล้ว';
+        $_SESSION['msg_type'] = 'success';
+        header("Location: view.php?id=" . $booking_id);
+        exit();
+    } elseif ($action === 'cancel_by_user' && ($is_owner || $can_manage_all) && in_array($cur_status, ['pending_head', 'pending_deputy', 'approved'])) {
+        $stmt_cancel = $pdo->prepare("UPDATE vehicle_bookings SET status = 'cancelled', reject_reason = :reason, updated_at = NOW() WHERE booking_id = :id");
+        $stmt_cancel->execute([
+            ':reason' => $can_manage_all && !$is_owner ? 'งานพัสดุ/ผู้ดูแลระบบยกเลิกคำขอ' : 'ผู้ขอยกเลิกคำขอเอง',
+            ':id' => $booking_id
+        ]);
         $_SESSION['msg'] = 'ยกเลิกคำขอใช้รถเรียบร้อยแล้ว';
         $_SESSION['msg_type'] = 'warning';
         header("Location: view.php?id=" . $booking_id);
@@ -86,8 +131,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
                         updated_at = NOW()
                     WHERE booking_id = :id
                 ");
-                $stmt_up->execute([':comment' => $comment, ':uid' => $current_user_id, ':id' => $booking_id]);
-                $_SESSION['msg'] = 'บันทึกความเห็นชอบของหัวหน้าสำนักงานเรียบร้อยแล้ว ส่งต่อให้รองคณบดีฝ่ายบริหารพิจารณา';
+                $stmt_up->execute([':comment' => $comment ?: 'เห็นชอบการขอใช้รถ (งานพัสดุ/หัวหน้าสำนักงาน)', ':uid' => $current_user_id, ':id' => $booking_id]);
+                $_SESSION['msg'] = 'บันทึกความเห็นชอบเรียบร้อยแล้ว ส่งต่อให้รองคณบดีฝ่ายบริหารพิจารณา';
                 $_SESSION['msg_type'] = 'success';
             } elseif ($cur_status === 'pending_deputy') {
                 $stmt_up = $pdo->prepare("
@@ -99,7 +144,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action'])) {
                         updated_at = NOW()
                     WHERE booking_id = :id
                 ");
-                $stmt_up->execute([':comment' => $comment, ':uid' => $current_user_id, ':id' => $booking_id]);
+                $stmt_up->execute([':comment' => $comment ?: 'อนุมัติการใช้รถยนต์ราชการ', ':uid' => $current_user_id, ':id' => $booking_id]);
                 $_SESSION['msg'] = 'อนุมัติการใช้รถยนต์ราชการสมบูรณ์แล้ว ผู้ขอสามารถนำรถออกปฏิบัติภารกิจได้ตามกำหนดเวลา';
                 $_SESSION['msg_type'] = 'success';
             }
@@ -163,6 +208,18 @@ $stmt_insp->execute([$booking_id]);
 $inspections = $stmt_insp->fetchAll(PDO::FETCH_ASSOC);
 
 $status_info = getVehicleBookingStatusBadge($b['status']);
+
+// ดึงข้อมูลรถและคนขับสำหรับใช้ใน Dispatch Modal (งานพัสดุ)
+$all_vehicles = $pdo->query("SELECT * FROM vehicles ORDER BY vehicle_id ASC")->fetchAll(PDO::FETCH_ASSOC);
+$stmt_drivers = $pdo->query("
+    SELECT u.user_id, u.prefix_name, u.first_name, u.last_name, u.phone 
+    FROM users u
+    JOIN user_roles ur ON u.user_id = ur.user_id
+    JOIN roles r ON ur.role_id = r.role_id
+    WHERE r.role_name = 'พนักงานขับรถ' OR r.role_id = 34
+    ORDER BY u.first_name ASC
+");
+$all_drivers = $stmt_drivers->fetchAll(PDO::FETCH_ASSOC);
 $is_c2 = ($b['vehicle_type'] === 'cargo_instruments');
 
 require_once '../../includes/header.php';
@@ -219,10 +276,15 @@ require_once '../../includes/sidebar.php';
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            <?php if ($can_manage_all): ?>
+                <button type="button" class="btn btn-purple rounded-pill px-3 fw-semibold shadow-2xs" data-bs-toggle="modal" data-bs-target="#dispatchModal">
+                    <i class="fa-solid fa-sliders me-1"></i> จัดการคำขอ / สลับรถ (งานพัสดุ)
+                </button>
+            <?php endif; ?>
             <a href="print.php?id=<?= $b['booking_id'] ?>" target="_blank" class="btn btn-outline-purple rounded-pill px-3 fw-semibold shadow-2xs">
                 <i class="fa-solid fa-print me-1"></i> พิมพ์ใบขอใช้รถ
             </a>
-            <?php if ($b['status'] === 'approved'): ?>
+            <?php if (in_array($b['status'], ['approved', 'completed'])): ?>
                 <a href="trip_logs.php?booking_id=<?= $b['booking_id'] ?>" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
                     <i class="fa-solid fa-gas-pump me-1"></i> บันทึกค่าใช้จ่าย & น้ำมัน
                 </a>
@@ -403,6 +465,25 @@ require_once '../../includes/sidebar.php';
         </div>
     <?php endif; ?>
 
+    <!-- Restore Box for Cancelled or Rejected (สำหรับงานพัสดุ & แอดมิน) -->
+    <?php if (in_array($cur_status, ['rejected', 'cancelled']) && $can_manage_all): ?>
+        <div class="card border-0 shadow-xs rounded-4 bg-white p-4 mb-4 border-start border-4 border-success">
+            <h5 class="fw-bold text-dark mb-2">
+                <i class="fa-solid fa-rotate-left text-success me-2"></i>นำคำขอกลับมาใช้งานและอนุมัติ (งานพัสดุ / แอดมิน)
+            </h5>
+            <p class="text-muted small mb-3">คำขอนี้มีสถานะ "<?= $cur_status === 'rejected' ? 'ไม่อนุมัติ' : 'ยกเลิก' ?>" ท่านสามารถนำกลับมาอนุมัติจัดรถและเปิดให้ใช้งานได้</p>
+            <form method="POST">
+                <input type="hidden" name="action" value="restore_approved">
+                <div class="mb-3">
+                    <input type="text" name="comment" class="form-control rounded-3" placeholder="ระบุเหตุผลการนำกลับมาใช้งาน เช่น แก้ไขเวลา/คิวพร้อมเดินทางแล้ว">
+                </div>
+                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" onclick="return confirm('ยืนยันนำคำขอนี้กลับมาใช้งานและอนุมัติทันที?');">
+                    <i class="fa-solid fa-check me-1"></i> นำกลับมาใช้งานและอนุมัติทันที
+                </button>
+            </form>
+        </div>
+    <?php endif; ?>
+
     <div class="row g-4">
 
         <!-- Left Details -->
@@ -549,5 +630,112 @@ require_once '../../includes/sidebar.php';
     </div>
 
 </main>
+
+<?php if ($can_manage_all): ?>
+<!-- Modal จัดการคำขอ / สลับรถ / ปรับคนขับ (สำหรับงานพัสดุ & แอดมิน) -->
+<div class="modal fade" id="dispatchModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 bg-purple bg-opacity-10 py-3">
+                <h5 class="modal-title fw-bold text-purple">
+                    <i class="fa-solid fa-sliders me-2"></i>จัดการคำขอ / จัดรถและคนขับ (งานพัสดุ)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="action" value="manage_dispatch">
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">สลับรถยนต์ที่จัดให้ <span class="text-danger">*</span></label>
+                        <select name="vehicle_id" class="form-select rounded-3" required>
+                            <?php foreach ($all_vehicles as $v): ?>
+                                <option value="<?= $v['vehicle_id'] ?>" <?= $b['vehicle_id'] == $v['vehicle_id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($v['model']) ?> (ทะเบียน <?= htmlspecialchars($v['plate_number']) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">ปรับสถานะคำขอโดยตรง <span class="text-danger">*</span></label>
+                        <select name="status" class="form-select rounded-3" required>
+                            <option value="pending_head" <?= $b['status'] === 'pending_head' ? 'selected' : '' ?>>รอหัวหน้าสำนักงานพิจารณา</option>
+                            <option value="pending_deputy" <?= $b['status'] === 'pending_deputy' ? 'selected' : '' ?>>รอรองคณบดีฝ่ายบริหารพิจารณา</option>
+                            <option value="approved" <?= $b['status'] === 'approved' ? 'selected' : '' ?>>✓ อนุมัติจัดรถเรียบร้อย (Approved)</option>
+                            <option value="completed" <?= $b['status'] === 'completed' ? 'selected' : '' ?>>✓ เสร็จสิ้นภารกิจ (Completed)</option>
+                            <option value="cancelled" <?= $b['status'] === 'cancelled' ? 'selected' : '' ?>>✗ ยกเลิกคำขอ (Cancelled)</option>
+                            <option value="rejected" <?= $b['status'] === 'rejected' ? 'selected' : '' ?>>✗ ไม่อนุมัติ (Rejected)</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-dark">ลักษณะคนขับ</label>
+                            <select name="driver_type" id="disp_driver_type" class="form-select rounded-3" onchange="toggleDispDriver(this.value)">
+                                <option value="driver_assigned" <?= $b['driver_type'] === 'driver_assigned' ? 'selected' : '' ?>>พนักงานขับรถประจำ</option>
+                                <option value="self_drive" <?= $b['driver_type'] === 'self_drive' ? 'selected' : '' ?>>ผู้ขอขับเอง / อาจารย์ขับเอง</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="disp_driver_select_box">
+                            <label class="form-label fw-bold small text-dark">เลือกคนขับประจำ</label>
+                            <select name="driver_id" class="form-select rounded-3" onchange="onDispDriverChange(this)">
+                                <option value="">-- ระบุชื่อคนขับ --</option>
+                                <?php foreach ($all_drivers as $d): 
+                                    $dname = trim(($d['prefix_name'] ?? '') . $d['first_name'] . ' ' . $d['last_name']);
+                                ?>
+                                    <option value="<?= $d['user_id'] ?>" data-name="<?= htmlspecialchars($dname) ?>" <?= $b['driver_id'] === $d['user_id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($dname) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">ชื่อผู้ขับขี่ (แสดงในใบขอใช้รถ)</label>
+                        <input type="text" name="driver_name" id="disp_driver_name" class="form-control rounded-3" value="<?= htmlspecialchars($b['driver_name']) ?>" placeholder="เช่น นายเนตร เนื่องวรรณะ">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light py-3 px-4 d-flex justify-content-between">
+                    <button type="submit" name="action" value="delete_booking" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="return confirm('คำเตือน: คุณต้องการลบคำขอใช้รถนี้ออกจากระบบอย่างถาวรใช่หรือไม่?');">
+                        <i class="fa-solid fa-trash me-1"></i> ลบคำขอนี้
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-purple rounded-pill px-4 fw-bold">
+                            <i class="fa-solid fa-save me-1"></i> บันทึกการจัดรถ
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDispDriver(val) {
+    var box = document.getElementById('disp_driver_select_box');
+    var nameInput = document.getElementById('disp_driver_name');
+    if (val === 'self_drive') {
+        box.style.display = 'none';
+        if (!nameInput.value || nameInput.value === 'นายเนตร เนื่องวรรณะ') {
+            nameInput.value = '<?= htmlspecialchars(addslashes($req_name)) ?> (ผู้ขอขับเอง)';
+        }
+    } else {
+        box.style.display = 'block';
+    }
+}
+
+function onDispDriverChange(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.name) {
+        document.getElementById('disp_driver_name').value = opt.dataset.name;
+    }
+}
+</script>
+<?php endif; ?>
 
 <?php require_once '../../includes/footer.php'; ?>

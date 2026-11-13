@@ -9,11 +9,20 @@ require_once 'helpers.php';
 
 $current_user_id = $_SESSION['user_id'] ?? '';
 $user_roles = $_SESSION['roles'] ?? [];
+$is_admin = in_array('admin', $user_roles);
+$is_supply = in_array('งานพัสดุ', $user_roles);
+$can_book_for_others = $is_admin || $is_supply;
 
 // ดึงข้อมูลผู้ยื่นคำขอ
 $stmt_u = $pdo->prepare("SELECT prefix_name, first_name, last_name, position, email, phone FROM users WHERE user_id = ?");
 $stmt_u->execute([$current_user_id]);
 $current_user = $stmt_u->fetch(PDO::FETCH_ASSOC);
+
+// ดึงรายชื่อบุคลากรทั้งหมดในระบบ สำหรับงานพัสดุ / แอดมินจองแทน
+$all_users = [];
+if ($can_book_for_others) {
+    $all_users = $pdo->query("SELECT user_id, prefix_name, first_name, last_name, position FROM users WHERE status = 'active' ORDER BY first_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // ดึงข้อมูลรถทั้ง 2 คัน
 $stmt_v = $pdo->query("SELECT * FROM vehicles ORDER BY vehicle_id ASC");
@@ -64,6 +73,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
             $error = "รถคันที่ท่านเลือกมีภารกิจอื่นถูกจองไว้แล้วในช่วงเวลาเดียวกัน:<br>• " . implode("<br>• ", $c_items);
         } else {
+            $target_user_id = $current_user_id;
+            if ($can_book_for_others && !empty($_POST['requested_for_user_id'])) {
+                $target_user_id = $_POST['requested_for_user_id'];
+                if ($target_user_id !== $current_user_id) {
+                    $notes = trim($notes . " (ยื่นคำขอแทนโดย งานพัสดุ: " . ($current_user['first_name'] ?? '') . ' ' . ($current_user['last_name'] ?? '') . ")");
+                }
+            }
+
             // ดึงชื่อคนขับถ้าเลือกจากรายการ
             if ($driver_type === 'driver_assigned' && !empty($driver_id)) {
                 $stmt_dname = $pdo->prepare("SELECT prefix_name, first_name, last_name FROM users WHERE user_id = ?");
@@ -72,8 +89,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $driver_name = trim(($d_row['prefix_name'] ?? '') . $d_row['first_name'] . ' ' . $d_row['last_name']);
                 }
             } elseif ($driver_type === 'self_drive') {
-                $driver_name = trim(($current_user['prefix_name'] ?? '') . $current_user['first_name'] . ' ' . $current_user['last_name']) . " (ผู้ขอขับเอง)";
-                $driver_id = $current_user_id;
+                $stmt_tu = $pdo->prepare("SELECT prefix_name, first_name, last_name FROM users WHERE user_id = ?");
+                $stmt_tu->execute([$target_user_id]);
+                $tu_row = $stmt_tu->fetch();
+                $tu_name = $tu_row ? trim(($tu_row['prefix_name'] ?? '') . $tu_row['first_name'] . ' ' . $tu_row['last_name']) : 'ผู้ขอ';
+                $driver_name = $tu_name . " (ผู้ขอขับเอง)";
+                $driver_id = $target_user_id;
             }
 
             try {
@@ -92,7 +113,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 $stmt_ins->execute([
                     ':code' => $booking_code,
-                    ':uid' => $current_user_id,
+                    ':uid' => $target_user_id,
                     ':veh_id' => $vehicle_id,
                     ':title' => $title,
                     ':dest' => $destination,
@@ -168,6 +189,31 @@ require_once '../../includes/sidebar.php';
 
         <!-- Left Column: Form Details -->
         <div class="col-lg-8">
+
+            <?php if ($can_book_for_others): ?>
+                <!-- กล่องเลือกผู้ขอใช้รถ สำหรับงานพัสดุ / แอดมินจองแทน -->
+                <div class="card border-0 shadow-xs rounded-4 bg-purple-subtle bg-opacity-25 p-4 mb-4 border-start border-4 border-purple">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-purple mb-0">
+                            <i class="fa-solid fa-user-gear me-2"></i>ผู้ขอใช้รถยนต์ราชการ (งานพัสดุสามารถเลือกจองในนามบุคลากร/อาจารย์ได้)
+                        </h6>
+                        <span class="badge bg-purple text-white rounded-pill extra-small">สิทธิ์งานพัสดุ & ผู้ดูแล</span>
+                    </div>
+                    <select name="requested_for_user_id" class="form-select rounded-3">
+                        <option value="<?= $current_user_id ?>">จองในนามของฉัน: <?= htmlspecialchars(($current_user['prefix_name'] ?? '') . $current_user['first_name'] . ' ' . $current_user['last_name']) ?> (<?= htmlspecialchars($current_user['position'] ?? '') ?>)</option>
+                        <optgroup label="-- เลือกบุคลากร/อาจารย์ท่านอื่น --">
+                            <?php foreach ($all_users as $u): 
+                                if ($u['user_id'] === $current_user_id) continue;
+                                $uname = trim(($u['prefix_name'] ?? '') . $u['first_name'] . ' ' . $u['last_name']);
+                            ?>
+                                <option value="<?= $u['user_id'] ?>" <?= (isset($_POST['requested_for_user_id']) && $_POST['requested_for_user_id'] === $u['user_id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($uname) ?> (<?= htmlspecialchars($u['position'] ?? 'บุคลากร') ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                    </select>
+                </div>
+            <?php endif; ?>
 
             <!-- 1. เลือกยานพาหนะ -->
             <div class="card border-0 shadow-xs rounded-4 bg-white p-4 mb-4">
