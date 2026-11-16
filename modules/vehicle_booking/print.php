@@ -15,7 +15,7 @@ if ($booking_id <= 0) {
 // ดึงข้อมูลคำขอใช้รถ
 $stmt = $pdo->prepare("
     SELECT b.*,
-           v.plate_number, v.model, v.brand, v.year_made, v.vehicle_type, v.seating_capacity, v.fuel_type,
+           v.plate_number, v.asset_number, v.color, v.model, v.brand, v.year_made, v.vehicle_type, v.seating_capacity, v.fuel_type,
            u.prefix_name AS req_prefix, u.first_name AS req_first, u.last_name AS req_last, u.position AS req_pos, u.signature_file AS req_sig,
            head.prefix_name AS head_prefix, head.first_name AS head_first, head.last_name AS head_last, head.signature_file AS head_sig_file,
            dep.prefix_name AS dep_prefix, dep.first_name AS dep_first, dep.last_name AS dep_last, dep.signature_file AS dep_sig_file
@@ -231,7 +231,11 @@ $is_head_done = !empty($b['head_approved_at']);
                 <td><strong>มีความประสงค์ขอใช้:</strong></td>
                 <td>
                     <strong><?= htmlspecialchars($b['model']) ?></strong>
+                    <?= !empty($b['color']) ? ' (' . htmlspecialchars($b['color']) . ')' : '' ?>
                     (หมายเลขทะเบียน <strong><?= htmlspecialchars($b['plate_number']) ?></strong>)
+                    <?php if (!empty($b['asset_number'])): ?>
+                        <span style="font-size: 10.5pt; color: #475569; margin-left: 4px;">(เลขครุภัณฑ์: <?= htmlspecialchars($b['asset_number']) ?>)</span>
+                    <?php endif; ?>
                     <span style="font-size: 11pt; color: #555;">[<?= $is_c2 ? 'คันบรรทุกเครื่องดนตรี' : 'คันรับส่งบุคคล' ?>]</span>
                 </td>
             </tr>

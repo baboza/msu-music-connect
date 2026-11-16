@@ -107,7 +107,7 @@ $vehicles = $pdo->query("SELECT * FROM vehicles ORDER BY vehicle_id ASC")->fetch
 
 // ดึงรายการตรวจเช็คล่าสุด
 $sql_insp = "
-    SELECT i.*, v.plate_number, v.model, v.vehicle_type,
+    SELECT i.*, v.plate_number, v.color, v.asset_number, v.model, v.vehicle_type,
            b.booking_code, b.title as booking_title
     FROM vehicle_inspections i
     LEFT JOIN vehicles v ON i.vehicle_id = v.vehicle_id
@@ -269,6 +269,7 @@ require_once '../../includes/sidebar.php';
                                         <div class="fw-semibold text-dark small">
                                             <i class="fa-solid <?= $is_c2 ? 'fa-truck-front text-danger' : 'fa-van-shuttle text-purple' ?> me-1"></i>
                                             <?= htmlspecialchars($insp['model']) ?>
+                                            <?= !empty($insp['color']) ? ' (' . htmlspecialchars($insp['color']) . ')' : '' ?>
                                         </div>
                                         <span class="badge bg-light text-dark border extra-small mt-1"><?= htmlspecialchars($insp['plate_number']) ?></span>
                                     </td>

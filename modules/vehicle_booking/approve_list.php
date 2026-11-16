@@ -128,7 +128,7 @@ $counts = [
 
 // Query รายการตามแท็บ
 $sql = "
-    SELECT b.*, v.plate_number, v.model, v.brand, v.vehicle_type,
+    SELECT b.*, v.plate_number, v.model, v.brand, v.vehicle_type, v.color, v.asset_number,
            u.prefix_name, u.first_name, u.last_name, u.position
     FROM vehicle_bookings b
     LEFT JOIN vehicles v ON b.vehicle_id = v.vehicle_id
@@ -284,6 +284,7 @@ require_once '../../includes/sidebar.php';
                                         <div class="fw-semibold text-dark small">
                                             <i class="fa-solid <?= $is_c2 ? 'fa-truck-front text-danger' : 'fa-van-shuttle text-purple' ?> me-1"></i>
                                             <?= htmlspecialchars($b['model']) ?>
+                                            <?= !empty($b['color']) ? ' (' . htmlspecialchars($b['color']) . ')' : '' ?>
                                         </div>
                                         <div class="badge bg-light text-dark border extra-small mt-1">
                                             <?= htmlspecialchars($b['plate_number']) ?>

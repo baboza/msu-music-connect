@@ -194,7 +194,7 @@ $stat_avg_fc = $pdo->query("SELECT AVG(fuel_consumption_rate) FROM vehicle_trip_
 // ดึงรายการ Log การเดินทาง
 $sql_logs = "
     SELECT l.*, b.booking_code, b.title, b.destination, b.start_datetime, b.end_datetime,
-           v.plate_number, v.model, v.vehicle_type,
+           v.plate_number, v.color, v.asset_number, v.model, v.vehicle_type,
            u.first_name, u.last_name
     FROM vehicle_trip_logs l
     LEFT JOIN vehicle_bookings b ON l.booking_id = b.booking_id
@@ -390,6 +390,7 @@ require_once '../../includes/sidebar.php';
                                         <div class="fw-semibold text-dark small">
                                             <i class="fa-solid <?= $is_c2 ? 'fa-truck-front text-danger' : 'fa-van-shuttle text-purple' ?> me-1"></i>
                                             <?= htmlspecialchars($lg['model']) ?>
+                                            <?= !empty($lg['color']) ? ' (' . htmlspecialchars($lg['color']) . ')' : '' ?>
                                         </div>
                                         <span class="badge bg-light text-dark border extra-small mt-1"><?= htmlspecialchars($lg['plate_number']) ?></span>
                                     </td>

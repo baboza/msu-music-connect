@@ -24,9 +24,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && 
         $notes = trim($_POST['notes'] ?? '');
         $seating = max(1, (int)($_POST['seating_capacity'] ?? 1));
         $fuel = trim($_POST['fuel_type'] ?? '');
+        $plate = trim($_POST['plate_number'] ?? '');
+        $asset = trim($_POST['asset_number'] ?? '');
+        $color = trim($_POST['color'] ?? '');
 
-        $stmt_up_veh = $pdo->prepare("UPDATE vehicles SET status = ?, current_odometer = ?, notes = ?, seating_capacity = ?, fuel_type = ? WHERE vehicle_id = ?");
-        $stmt_up_veh->execute([$status, $odo, $notes, $seating, $fuel, $veh_id]);
+        $stmt_up_veh = $pdo->prepare("UPDATE vehicles SET status = ?, current_odometer = ?, notes = ?, seating_capacity = ?, fuel_type = ?, plate_number = ?, asset_number = ?, color = ? WHERE vehicle_id = ?");
+        $stmt_up_veh->execute([$status, $odo, $notes, $seating, $fuel, $plate, $asset, $color, $veh_id]);
         $_SESSION['msg'] = 'อัปเดตข้อมูลและสถานะรถเรียบร้อยแล้ว';
         $_SESSION['msg_type'] = 'success';
         header("Location: index.php");
@@ -223,12 +226,23 @@ require_once '../../includes/sidebar.php';
                                 <span class="badge <?= $card_badge_color ?> px-3 py-1 rounded-pill small mb-2">
                                     <i class="<?= $veh_icon ?> me-1"></i> <?= $is_cargo ? 'คันที่ 2: บรรทุกเครื่องดนตรี' : 'คันที่ 1: รับส่งบุคคล / ผู้บริหาร' ?>
                                 </span>
-                                <h4 class="fw-bold text-dark mb-1"><?= htmlspecialchars($veh['model']) ?></h4>
+                                <h4 class="fw-bold text-dark mb-1">
+                                    <?= htmlspecialchars($veh['model']) ?>
+                                    <?php if (!empty($veh['color'])): ?>
+                                        <span class="badge bg-light text-secondary border fs-6 fw-normal ms-1"><?= htmlspecialchars($veh['color']) ?></span>
+                                    <?php endif; ?>
+                                </h4>
                                 <div class="text-muted small">
                                     <span class="fw-semibold text-dark"><i class="fa-solid fa-id-card me-1 text-purple"></i>ทะเบียน:</span> 
                                     <span class="badge bg-light text-dark border px-2 py-1 fw-bold"><?= htmlspecialchars($veh['plate_number']) ?></span>
                                     <span class="ms-2"><i class="fa-solid fa-calendar me-1 text-purple"></i>ปี <?= htmlspecialchars($veh['year_made']) ?></span>
                                 </div>
+                                <?php if (!empty($veh['asset_number'])): ?>
+                                    <div class="extra-small text-muted mt-1">
+                                        <i class="fa-solid fa-barcode me-1 text-purple"></i><strong>เลขครุภัณฑ์:</strong> 
+                                        <span class="badge bg-light text-dark border font-monospace extra-small"><?= htmlspecialchars($veh['asset_number']) ?></span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <?php
                             $v_status = $veh['status'] ?? 'available';
@@ -491,11 +505,23 @@ require_once '../../includes/sidebar.php';
 
             <div class="modal-body p-4">
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-dark">รุ่นรถ / ทะเบียน</label>
+                    <label class="form-label fw-bold small text-dark">รุ่นรถ / ยี่ห้อ</label>
                     <input type="text" id="edit_veh_model_display" class="form-control rounded-3 bg-light fw-semibold" readonly>
                 </div>
 
                 <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">เลขทะเบียนรถ <span class="text-danger">*</span></label>
+                        <input type="text" name="plate_number" id="edit_veh_plate" class="form-control rounded-3" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">เลขครุภัณฑ์</label>
+                        <input type="text" name="asset_number" id="edit_veh_asset" class="form-control rounded-3 font-monospace" placeholder="เช่น 90801001-040002-69240001">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark">สีตัวรถ</label>
+                        <input type="text" name="color" id="edit_veh_color" class="form-control rounded-3" placeholder="เช่น สีขาว หรือ สีเทา">
+                    </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-dark">สถานะความพร้อม <span class="text-danger">*</span></label>
                         <select name="status" id="edit_veh_status" class="form-select rounded-3" required>
@@ -504,17 +530,17 @@ require_once '../../includes/sidebar.php';
                             <option value="unavailable">✗ งดใช้งานชั่วคราว (Unavailable)</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-dark">เลขไมล์สะสมล่าสุด (กม.) <span class="text-danger">*</span></label>
                         <input type="number" name="current_odometer" id="edit_veh_odometer" class="form-control rounded-3" required min="0">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-dark">ความจุผู้โดยสาร (ที่นั่ง)</label>
                         <input type="number" name="seating_capacity" id="edit_veh_seating" class="form-control rounded-3" min="1" max="50">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-bold small text-dark">ชนิดเชื้อเพลิง</label>
-                        <input type="text" name="fuel_type" id="edit_veh_fuel" class="form-control rounded-3" placeholder="เช่น ดีเซล B7">
+                        <input type="text" name="fuel_type" id="edit_veh_fuel" class="form-control rounded-3" placeholder="เช่น ดีเซล">
                     </div>
                 </div>
 
@@ -537,7 +563,10 @@ require_once '../../includes/sidebar.php';
 <script>
 function openEditVehicleModal(veh) {
     document.getElementById('edit_veh_id').value = veh.vehicle_id;
-    document.getElementById('edit_veh_model_display').value = veh.model + ' (ทะเบียน: ' + veh.plate_number + ')';
+    document.getElementById('edit_veh_model_display').value = veh.model + (veh.color ? ' (' + veh.color + ')' : '');
+    document.getElementById('edit_veh_plate').value = veh.plate_number || '';
+    document.getElementById('edit_veh_asset').value = veh.asset_number || '';
+    document.getElementById('edit_veh_color').value = veh.color || '';
     document.getElementById('edit_veh_status').value = veh.status || 'available';
     document.getElementById('edit_veh_odometer').value = veh.current_odometer || 0;
     document.getElementById('edit_veh_seating').value = veh.seating_capacity || 1;

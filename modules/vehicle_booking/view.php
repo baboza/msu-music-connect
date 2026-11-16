@@ -24,7 +24,7 @@ if ($booking_id <= 0) {
 // ดึงข้อมูลคำขอใช้รถแบบเต็ม
 $stmt = $pdo->prepare("
     SELECT b.*,
-           v.plate_number, v.model, v.brand, v.year_made, v.vehicle_type, v.seating_capacity, v.fuel_type, v.current_odometer,
+           v.plate_number, v.asset_number, v.color, v.model, v.brand, v.year_made, v.vehicle_type, v.seating_capacity, v.fuel_type, v.current_odometer,
            u.prefix_name AS req_prefix, u.first_name AS req_first, u.last_name AS req_last, u.position AS req_pos, u.email AS req_email, u.phone AS req_phone, u.signature_file AS req_sig,
            head.prefix_name AS head_prefix, head.first_name AS head_first, head.last_name AS head_last, head.signature_file AS head_sig_file,
            dep.prefix_name AS dep_prefix, dep.first_name AS dep_first, dep.last_name AS dep_last, dep.signature_file AS dep_sig_file
@@ -594,11 +594,21 @@ require_once '../../includes/sidebar.php';
                 </div>
 
                 <div class="p-3 bg-light rounded-4 mb-3">
-                    <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($b['model']) ?></h5>
+                    <h5 class="fw-bold text-dark mb-1">
+                        <?= htmlspecialchars($b['model']) ?>
+                        <?php if (!empty($b['color'])): ?>
+                            <span class="badge bg-white text-secondary border fs-6 fw-normal ms-1"><?= htmlspecialchars($b['color']) ?></span>
+                        <?php endif; ?>
+                    </h5>
                     <div class="text-muted small mb-2">
                         <span class="badge bg-white text-dark border fw-bold"><?= htmlspecialchars($b['plate_number']) ?></span>
                         <span class="ms-1">ปี <?= $b['year_made'] ?></span>
                     </div>
+                    <?php if (!empty($b['asset_number'])): ?>
+                        <div class="extra-small text-muted mb-2 font-monospace">
+                            <i class="fa-solid fa-barcode me-1 text-purple"></i><strong>เลขครุภัณฑ์:</strong> <?= htmlspecialchars($b['asset_number']) ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="row g-2 extra-small text-muted">
                         <div class="col-6"><i class="fa-solid fa-users me-1 text-purple"></i>ที่นั่ง: <?= $b['seating_capacity'] ?> ที่นั่ง</div>
                         <div class="col-6"><i class="fa-solid fa-gas-pump me-1 text-purple"></i>น้ำมัน: <?= htmlspecialchars($b['fuel_type']) ?></div>
@@ -652,7 +662,7 @@ require_once '../../includes/sidebar.php';
                         <select name="vehicle_id" class="form-select rounded-3" required>
                             <?php foreach ($all_vehicles as $v): ?>
                                 <option value="<?= $v['vehicle_id'] ?>" <?= $b['vehicle_id'] == $v['vehicle_id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($v['model']) ?> (ทะเบียน <?= htmlspecialchars($v['plate_number']) ?>)
+                                    <?= htmlspecialchars($v['model']) ?> <?= !empty($v['color']) ? '(' . htmlspecialchars($v['color']) . ')' : '' ?> (ทะเบียน <?= htmlspecialchars($v['plate_number']) ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>

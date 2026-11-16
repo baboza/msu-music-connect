@@ -7,11 +7,13 @@ try {
     CREATE TABLE IF NOT EXISTS `vehicles` (
         `vehicle_id` int(11) NOT NULL AUTO_INCREMENT,
         `plate_number` varchar(50) NOT NULL COMMENT 'เลขทะเบียนรถ',
-        `brand` varchar(50) NOT NULL DEFAULT 'Toyota',
+        `asset_number` varchar(100) DEFAULT NULL COMMENT 'เลขครุภัณฑ์',
+        `brand` varchar(50) NOT NULL DEFAULT 'TOYOTA',
         `model` varchar(150) NOT NULL COMMENT 'ยี่ห้อและรุ่น',
+        `color` varchar(50) DEFAULT NULL COMMENT 'สีตัวรถ',
         `year_made` int(11) NOT NULL DEFAULT 2026,
         `vehicle_type` enum('passenger','cargo_instruments','other') NOT NULL DEFAULT 'passenger' COMMENT 'ประเภทรถ',
-        `seating_capacity` int(11) NOT NULL DEFAULT 13 COMMENT 'จำนวนที่นั่ง',
+        `seating_capacity` int(11) NOT NULL DEFAULT 11 COMMENT 'จำนวนที่นั่ง',
         `fuel_type` varchar(50) NOT NULL DEFAULT 'ดีเซล' COMMENT 'ประเภทน้ำมัน',
         `current_odometer` int(11) NOT NULL DEFAULT 0 COMMENT 'เลขไมล์สะสมล่าสุด',
         `status` enum('available','in_use','maintenance','inactive') NOT NULL DEFAULT 'available',
@@ -24,18 +26,55 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
 
+    // ตรวจสอบและเพิ่มคอลัมน์ asset_number และ color ในตาราง vehicles หากยังไม่มี
+    $columns_v = $pdo->query("SHOW COLUMNS FROM `vehicles`")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('asset_number', $columns_v)) {
+        $pdo->exec("ALTER TABLE `vehicles` ADD COLUMN `asset_number` varchar(100) DEFAULT NULL COMMENT 'เลขครุภัณฑ์' AFTER `plate_number`");
+    }
+    if (!in_array('color', $columns_v)) {
+        $pdo->exec("ALTER TABLE `vehicles` ADD COLUMN `color` varchar(50) DEFAULT NULL COMMENT 'สีตัวรถ' AFTER `model`");
+    }
+
     // Seed รถวิทยาลัย 2 คัน (ถ้ายังไม่มี)
     $chk = $pdo->query("SELECT COUNT(*) FROM `vehicles`")->fetchColumn();
     if ($chk == 0) {
         $pdo->exec("
-        INSERT INTO `vehicles` (`plate_number`, `brand`, `model`, `year_made`, `vehicle_type`, `seating_capacity`, `fuel_type`, `current_odometer`, `status`, `notes`) VALUES
-        ('นข-2026 มหาสารคาม', 'Toyota', 'Toyota Commuter VIP 2026', 2026, 'passenger', 13, 'ดีเซล B7', 15200, 'available', 'รถตู้ปรับอากาศ VIP ประจำวิทยาลัยดุริยางคศิลป์ สำหรับรับส่งผู้บริหาร อาจารย์ นิสิต และภารกิจทั่วไป'),
-        ('บพ-2569 มหาสารคาม', 'Toyota', 'Toyota ตู้บรรทุกเครื่องดนตรี', 2025, 'cargo_instruments', 3, 'ดีเซล', 28450, 'available', 'รถยนต์บรรทุกตู้ทึบดัดแปลงพิเศษ ติดตั้งแร็คและสายรัด สำหรับขนย้ายเครื่องดนตรีวงดุริยางค์ เครื่องดนตรีไทย-สากล และอุปกรณ์การแสดง')
+        INSERT INTO `vehicles` (`plate_number`, `asset_number`, `brand`, `model`, `color`, `year_made`, `vehicle_type`, `seating_capacity`, `fuel_type`, `current_odometer`, `status`, `notes`) VALUES
+        ('นข 4790 มหาสารคาม', '90801001-040002-69240001', 'TOYOTA', 'TOYOTA Commuter (2026)', 'สีขาว', 2026, 'passenger', 11, 'ดีเซล', 15200, 'available', 'ยี่ห้อ TOYOTA รุ่น Commuter (2026) สีขาว ขนาด 11 ที่นั่ง (เลขครุภัณฑ์: 90801001-040002-69240001) สำหรับรับส่งผู้บริหาร อาจารย์ นิสิต และภารกิจทั่วไป'),
+        ('นข 1938 มหาสารคาม', '5000002-040080-5220001', 'TOYOTA', 'TOYOTA Commuter (2009)', 'สีเทา', 2009, 'cargo_instruments', 9, 'ดีเซล', 28450, 'available', 'ยี่ห้อ TOYOTA รุ่น Commuter (2009) สีเทา ขนาด 9 ที่นั่ง (เลขครุภัณฑ์: 5000002-040080-5220001) สำหรับบรรทุกเครื่องดนตรี อุปกรณ์การแสดง และรับส่งผู้ร่วมเดินทาง')
         ");
     }
 
-    // อัปเดตรุ่นของรถบรรทุกเครื่องดนตรีให้ตรงกับความต้องการ (นำคำว่า Hilux Revo ออก)
-    $pdo->exec("UPDATE `vehicles` SET `model` = 'Toyota ตู้บรรทุกเครื่องดนตรี' WHERE `model` LIKE '%Hilux Revo%'");
+    // อัปเดตข้อมูลรถราชการให้ตรงกับฐานข้อมูลครุภัณฑ์จริงของมหาวิทยาลัยเสมอ
+    $pdo->exec("
+        UPDATE `vehicles` SET 
+            `plate_number` = 'นข 4790 มหาสารคาม',
+            `asset_number` = '90801001-040002-69240001',
+            `brand` = 'TOYOTA',
+            `model` = 'TOYOTA Commuter (2026)',
+            `color` = 'สีขาว',
+            `year_made` = 2026,
+            `seating_capacity` = 11,
+            `fuel_type` = 'ดีเซล',
+            `vehicle_type` = 'passenger',
+            `notes` = 'ยี่ห้อ TOYOTA รุ่น Commuter (2026) สีขาว ขนาด 11 ที่นั่ง (เลขครุภัณฑ์: 90801001-040002-69240001) สำหรับรับส่งผู้บริหาร อาจารย์ นิสิต และภารกิจทั่วไป'
+        WHERE `vehicle_id` = 1
+    ");
+
+    $pdo->exec("
+        UPDATE `vehicles` SET 
+            `plate_number` = 'นข 1938 มหาสารคาม',
+            `asset_number` = '5000002-040080-5220001',
+            `brand` = 'TOYOTA',
+            `model` = 'TOYOTA Commuter (2009)',
+            `color` = 'สีเทา',
+            `year_made` = 2009,
+            `seating_capacity` = 9,
+            `fuel_type` = 'ดีเซล',
+            `vehicle_type` = 'cargo_instruments',
+            `notes` = 'ยี่ห้อ TOYOTA รุ่น Commuter (2009) สีเทา ขนาด 9 ที่นั่ง (เลขครุภัณฑ์: 5000002-040080-5220001) สำหรับบรรทุกเครื่องดนตรี อุปกรณ์การแสดง และรับส่งผู้ร่วมเดินทาง'
+        WHERE `vehicle_id` = 2
+    ");
 
     // 2. ตารางคำขอใช้รถ (Vehicle Bookings)
     $pdo->exec("

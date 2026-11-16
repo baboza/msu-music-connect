@@ -238,11 +238,21 @@ require_once '../../includes/sidebar.php';
                                         <?= $is_cargo ? 'คันที่ 2: บรรทุกเครื่องดนตรี' : 'คันที่ 1: รับส่งบุคคล' ?>
                                     </span>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1"><?= htmlspecialchars($v['model']) ?></h6>
-                                <div class="text-muted extra-small mb-2">
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <?= htmlspecialchars($v['model']) ?>
+                                    <?php if (!empty($v['color'])): ?>
+                                        <span class="badge bg-light text-secondary border extra-small ms-1"><?= htmlspecialchars($v['color']) ?></span>
+                                    <?php endif; ?>
+                                </h6>
+                                <div class="text-muted extra-small mb-1">
                                     <strong>ทะเบียน:</strong> <span class="badge bg-light text-dark border"><?= htmlspecialchars($v['plate_number']) ?></span>
-                                    • ปี <?= $v['year_made'] ?>
+                                    • <?= $v['seating_capacity'] ?> ที่นั่ง
                                 </div>
+                                <?php if (!empty($v['asset_number'])): ?>
+                                    <div class="extra-small text-muted mb-2 font-monospace">
+                                        <i class="fa-solid fa-barcode me-1 text-purple"></i><?= htmlspecialchars($v['asset_number']) ?>
+                                    </div>
+                                <?php endif; ?>
                                 <p class="extra-small text-muted mb-0">
                                     <?= htmlspecialchars($v['notes'] ?? '') ?>
                                 </p>
