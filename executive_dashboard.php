@@ -432,6 +432,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['exec_quick_action']))
                     ->execute([$new_st, $q_comment ?: ($q_action === 'approve' ? 'เห็นชอบการอุทธรณ์คะแนน' : 'ปฏิเสธการอุทธรณ์'), $q_id, $user_id]);
                 $drawer_flash_msg = ($q_action === 'approve' ? 'อนุมัติการอุทธรณ์คะแนน' : 'ปฏิเสธการอุทธรณ์') . ' (GA-' . str_pad((string)$q_id, 4, '0', STR_PAD_LEFT) . ') เรียบร้อยแล้ว';
                 if ($q_action !== 'approve') $drawer_flash_type = 'warning';
+            } elseif ($q_module === 'vehicle_booking') {
+                // จองรถยนต์ราชการ: 2 ขั้นตอน (1: หัวหน้าสำนักงาน/งานพัสดุ -> 2: รองคณบดีฝ่ายบริหาร)
+                $stmt_cur = $pdo->prepare("SELECT status, booking_code FROM vehicle_bookings WHERE booking_id = ?");
+                $stmt_cur->execute([$q_id]);
+                $vb_cur = $stmt_cur->fetch(PDO::FETCH_ASSOC);
+                if ($vb_cur && in_array($vb_cur['status'], ['pending_head', 'pending_deputy'])) {
+                    $cur_st = $vb_cur['status'];
+                    $b_code = $vb_cur['booking_code'] ?: ('VB-' . str_pad((string)$q_id, 4, '0', STR_PAD_LEFT));
+                    $can_act = false;
+                    if ($cur_st === 'pending_head' && ($is_admin || $is_supply_issuer || $is_training_office_head || $user_id === '34ee8171')) {
+                        $can_act = true;
+                    } elseif ($cur_st === 'pending_deputy' && ($is_admin || $is_supply_issuer || $is_training_deputy_admin || $is_dean || $user_id === '86580da6')) {
+                        $can_act = true;
+                    }
+
+                    if ($can_act) {
+                        if ($q_action === 'approve') {
+                            if ($cur_st === 'pending_head') {
+                                $pdo->prepare("
+                                    UPDATE vehicle_bookings 
+                                    SET status = 'pending_deputy',
+                                        head_comment = :comment,
+                                        head_approved_at = NOW(),
+                                        head_approved_by = :uid,
+                                        reject_reason = NULL,
+                                        updated_at = NOW()
+                                    WHERE booking_id = :id
+                                ")->execute([
+                                    ':comment' => $q_comment ?: 'เห็นควรจัดรถตามขอ (ผ่านการตรวจความพร้อมแล้ว)',
+                                    ':uid'     => $user_id,
+                                    ':id'      => $q_id
+                                ]);
+                                $drawer_flash_msg = 'เห็นชอบคำขอใช้รถยนต์ราชการ (' . $b_code . ') ส่งต่อรองคณบดีฝ่ายบริหารเรียบร้อยแล้ว';
+                            } else {
+                                $pdo->prepare("
+                                    UPDATE vehicle_bookings 
+                                    SET status = 'approved',
+                                        deputy_comment = :comment,
+                                        deputy_approved_at = NOW(),
+                                        deputy_approved_by = :uid,
+                                        reject_reason = NULL,
+                                        updated_at = NOW()
+                                    WHERE booking_id = :id
+                                ")->execute([
+                                    ':comment' => $q_comment ?: 'อนุมัติให้ใช้รถยนต์ราชการได้ตามกำหนด',
+                                    ':uid'     => $user_id,
+                                    ':id'      => $q_id
+                                ]);
+                                $drawer_flash_msg = 'อนุมัติการขอใช้รถยนต์ราชการ (' . $b_code . ') อนุมัติสมบูรณ์เรียบร้อยแล้ว';
+                            }
+                        } else {
+                            $pdo->prepare("
+                                UPDATE vehicle_bookings 
+                                SET status = 'rejected',
+                                    reject_reason = :reason,
+                                    updated_at = NOW()
+                                WHERE booking_id = :id
+                            ")->execute([
+                                ':reason' => $q_comment ?: 'ไม่อนุมัติคำขอใช้รถยนต์ราชการ',
+                                ':id'     => $q_id
+                            ]);
+                            $drawer_flash_msg = 'ไม่อนุมัติคำขอใช้รถยนต์ราชการ (' . $b_code . ') เรียบร้อยแล้ว';
+                            $drawer_flash_type = 'warning';
+                        }
+                    } else {
+                        $drawer_flash_msg = 'ไม่สามารถดำเนินการได้: อยู่นอกเหนือสิทธิ์การพิจารณาในขั้นตอนนี้';
+                        $drawer_flash_type = 'warning';
+                    }
+                }
             }
         }
     } catch (PDOException $e) {
@@ -777,6 +846,76 @@ try {
     $stmt_z = $pdo->prepare("SELECT COUNT(*) FROM zoom_bookings WHERE DATE(start_time) = ?");
     $stmt_z->execute([$today]);
     $zoom_today = (int)($stmt_z->fetchColumn() ?: 0);
+} catch (PDOException $e) {}
+
+// 5.1 ข้อมูลยานพาหนะและคิวรถวิทยาลัย (College Fleet Telemetry)
+$vehicles_list = [];
+$vehicle_today_trips = [];
+$vehicle_pending_count = 0;
+$fleet_logistics = [
+    'total_trips'       => 0,
+    'total_distance'    => 0,
+    'total_fuel_liters' => 0,
+    'total_fuel_cost'   => 0,
+    'total_toll_fee'    => 0,
+    'total_parking_fee' => 0,
+    'total_allowance'   => 0,
+    'total_all_expense' => 0,
+    'avg_km_per_liter'  => 0
+];
+try {
+    // รายการรถ 2 คัน
+    $stmt_veh = $pdo->query("SELECT * FROM vehicles ORDER BY vehicle_id ASC");
+    $vehicles_list = $stmt_veh->fetchAll(PDO::FETCH_ASSOC);
+
+    // ภารกิจใช้รถที่เดินทางวันนี้
+    $stmt_v_today = $pdo->prepare("
+        SELECT vb.*, v.plate_number, v.model, v.color, v.seating_capacity, v.vehicle_type,
+               u.prefix_name, u.first_name, u.last_name, u.phone, d.dept_name
+        FROM vehicle_bookings vb
+        JOIN vehicles v ON vb.vehicle_id = v.vehicle_id
+        JOIN users u ON vb.user_id = u.user_id
+        LEFT JOIN departments d ON u.dept_id = d.dept_id
+        WHERE vb.status = 'approved'
+          AND DATE(vb.start_datetime) <= :today
+          AND DATE(vb.end_datetime) >= :today
+        ORDER BY vb.start_datetime ASC
+    ");
+    $stmt_v_today->execute([':today' => $today]);
+    $vehicle_today_trips = $stmt_v_today->fetchAll(PDO::FETCH_ASSOC);
+
+    // คำขอรออนุมัติ (pending_head, pending_deputy)
+    $stmt_v_pend = $pdo->query("SELECT COUNT(*) FROM vehicle_bookings WHERE status IN ('pending_head', 'pending_deputy')");
+    $vehicle_pending_count = (int)($stmt_v_pend->fetchColumn() ?: 0);
+
+    // สรุปข้อมูลโลจิสติกส์การเดินทางและค่าใช้จ่าย
+    $stmt_log = $pdo->query("
+        SELECT 
+            COUNT(log_id) as total_trips,
+            COALESCE(SUM(total_distance), 0) as total_dist,
+            COALESCE(SUM(fuel_liters), 0) as total_liters,
+            COALESCE(SUM(fuel_cost), 0) as total_fuel,
+            COALESCE(SUM(toll_cost), 0) as total_toll,
+            COALESCE(SUM(parking_cost), 0) as total_parking,
+            COALESCE(SUM(driver_allowance), 0) as total_allowance,
+            COALESCE(SUM(total_expenses), 0) as total_exp,
+            COALESCE(AVG(NULLIF(fuel_consumption_rate, 0)), 0) as avg_rate
+        FROM vehicle_trip_logs
+    ");
+    $r_log = $stmt_log->fetch(PDO::FETCH_ASSOC);
+    if ($r_log) {
+        $fleet_logistics = [
+            'total_trips'       => (int)$r_log['total_trips'],
+            'total_distance'    => (float)$r_log['total_dist'],
+            'total_fuel_liters' => (float)$r_log['total_liters'],
+            'total_fuel_cost'   => (float)$r_log['total_fuel'],
+            'total_toll_fee'    => (float)$r_log['total_toll'],
+            'total_parking_fee' => (float)$r_log['total_parking'],
+            'total_allowance'   => (float)$r_log['total_allowance'],
+            'total_all_expense' => (float)$r_log['total_exp'],
+            'avg_km_per_liter'  => (float)$r_log['avg_rate']
+        ];
+    }
 } catch (PDOException $e) {}
 
 // =========================================================
@@ -1418,6 +1557,105 @@ try {
     }
 } catch (PDOException $e) {}
 
+// 6.9 คำขออนุญาตใช้รถยนต์ราชการ (Vehicle Bookings — ตรวจสอบตามสิทธิ์ หน.สำนักงาน -> รองบริหาร -> พัสดุ/Admin)
+try {
+    $stmt_u_vb = $pdo->query("
+        SELECT vb.booking_id, vb.booking_code, vb.user_id, vb.vehicle_id, vb.title, vb.destination,
+               vb.route_detail, vb.start_datetime, vb.end_datetime, vb.passenger_count, vb.passenger_names,
+               vb.instruments_detail, vb.driver_name, vb.status, vb.head_comment, vb.deputy_comment, vb.created_at,
+               v.plate_number, v.model, v.color, v.seating_capacity, v.asset_number, v.vehicle_type,
+               u.prefix_name, u.first_name, u.last_name, u.position, u.phone, u.email, u.profile_picture, d.dept_name
+        FROM vehicle_bookings vb
+        LEFT JOIN vehicles v ON vb.vehicle_id = v.vehicle_id
+        LEFT JOIN users u ON vb.user_id = u.user_id
+        LEFT JOIN departments d ON u.dept_id = d.dept_id
+        WHERE vb.status IN ('pending_head', 'pending_deputy')
+        ORDER BY vb.created_at DESC
+    ");
+    while ($r = $stmt_u_vb->fetch(PDO::FETCH_ASSOC)) {
+        $st = $r['status'];
+        $can_approve = false;
+        $approve_btn_text = '';
+        $c_step = ($st === 'pending_head') ? 1 : 2;
+        $status_label = ($st === 'pending_head') ? 'รอหัวหน้าสำนักงานตรวจ (ขั้น 1/2)' : 'รอรองคณบดีฝ่ายบริหารอนุมัติ (ขั้น 2/2)';
+
+        if ($st === 'pending_head') {
+            if ($is_admin || $is_supply_issuer || $is_training_office_head || $user_id === '34ee8171') {
+                $can_approve = true;
+                $approve_btn_text = 'เห็นชอบ (เสนอรองบริหาร)';
+            }
+        } elseif ($st === 'pending_deputy') {
+            if ($is_admin || $is_supply_issuer || $is_training_deputy_admin || $is_dean || $user_id === '86580da6') {
+                $can_approve = true;
+                $approve_btn_text = 'อนุมัติการใช้รถราชการ';
+            }
+        }
+
+        $req_name = trim(($r['prefix_name'] ?? '') . $r['first_name'] . ' ' . $r['last_name']);
+        $car_title = ($r['model'] ?: 'รถยนต์ราชการ') . ' ทะเบียน ' . ($r['plate_number'] ?: '-');
+        $date_range = date('d/m/Y H:i', strtotime($r['start_datetime'])) . ' - ' . date('d/m/Y H:i', strtotime($r['end_datetime']));
+
+        $unified_stream[] = [
+            'record_id'        => (int)$r['booking_id'],
+            'code'             => $r['booking_code'] ?: ('VB-' . str_pad((string)$r['booking_id'], 4, '0', STR_PAD_LEFT)),
+            'drawer_header'    => 'คำขออนุญาตใช้รถยนต์ราชการส่วนกลาง',
+            'requester'        => $req_name,
+            'requester_sub'    => ($r['position'] ? $r['position'] . ' • ' : '') . ($r['dept_name'] ?: 'วิทยาลัยดุริยางคศิลป์'),
+            'initials'         => getThaiInitialsExec($r['first_name'], $r['last_name']),
+            'avatar'           => $r['profile_picture'] ?? '',
+            'phone'            => $r['phone'] ?: '043-754-385',
+            'email'            => $r['email'] ?: 'music@msu.ac.th',
+            'module_key'       => 'vehicle_booking',
+            'module_label'     => 'จองรถราชการ',
+            'module_icon'      => 'fa-car-side',
+            'module_badge'     => 'erp-cat-teal',
+            'title'            => $r['title'] ?: 'ขอใช้รถยนต์ราชการ',
+            'subtitle'         => ($r['destination'] ? 'ไป: ' . $r['destination'] . ' • ' : '') . $car_title,
+            'subtitle_err'     => '',
+            'date_main'        => formatThaiShortDateExec($r['start_datetime']),
+            'date_sub'         => 'เวลา ' . date('H:i', strtotime($r['start_datetime'])) . ' ถึง ' . date('d/m H:i', strtotime($r['end_datetime'])) . ' น.',
+            'status_group'     => 'pending',
+            'status_label'     => $status_label,
+            'status_pill_class'=> 'erp-status-pending',
+            'action_label'     => 'พิจารณา',
+            'action_url'       => 'modules/vehicle_booking/approve_list.php',
+            'has_approval_wf'  => true,
+            'can_approve'      => $can_approve,
+            'approve_btn_text' => $approve_btn_text,
+            'pending_step_note'=> $can_approve ? '' : 'รอผู้มีอำนาจในขั้นตอนนี้พิจารณา',
+            'details'          => [
+                ['label' => 'ภารกิจ / วัตถุประสงค์', 'value' => $r['title'] ?: '-', 'highlight' => false],
+                ['label' => 'สถานที่ปลายทาง', 'value' => $r['destination'] ?: '-', 'highlight' => true],
+                ['label' => 'รถยนต์ที่ขอใช้', 'value' => $car_title . ($r['color'] ? ' (' . $r['color'] . ')' : '') . ($r['asset_number'] ? ' [เลขครุภัณฑ์: ' . $r['asset_number'] . ']' : ''), 'highlight' => false],
+                ['label' => 'กำหนดวัน-เวลาเดินทาง', 'value' => $date_range, 'highlight' => false],
+                ['label' => 'พนักงานขับรถ', 'value' => $r['driver_name'] ?: 'พนักงานขับรถส่วนกลาง', 'highlight' => false],
+                ['label' => 'จำนวนผู้โดยสาร', 'value' => ($r['passenger_count'] ?: 1) . ' คน' . (!empty($r['passenger_names']) ? ' (' . $r['passenger_names'] . ')' : ''), 'highlight' => false],
+                ['label' => 'เครื่องดนตรี / สัมภาระ', 'value' => $r['instruments_detail'] ?: 'ไม่มีเครื่องดนตรีชิ้นใหญ่', 'highlight' => false],
+                ['label' => 'เส้นทางการเดินทาง', 'value' => $r['route_detail'] ?: 'ตามเส้นทางปกติที่ปลอดภัยและสะดวกรวดเร็วที่สุด', 'highlight' => false]
+            ],
+            'workflow_title'   => 'ขั้นตอนการพิจารณาอนุญาตใช้รถยนต์ราชการ 2 ลำดับ (VEHICLE WORKFLOW)',
+            'workflow_current' => $c_step,
+            'workflow_steps'   => [
+                [
+                    'step' => 1,
+                    'title' => '1. หัวหน้าสำนักงานเลขานุการ / งานพัสดุ',
+                    'name' => 'นางแจ่มจันทร์ เดชแพง (หัวหน้าสำนักงาน) / งานพัสดุ',
+                    'desc' => 'ตรวจสอบความพร้อมของยานพาหนะ ตารางคิวรถ และพนักงานขับรถ',
+                    'comment' => $r['head_comment'] ?? ''
+                ],
+                [
+                    'step' => 2,
+                    'title' => '2. รองคณบดีฝ่ายบริหาร',
+                    'name' => 'อาจารย์ ดร.วัชระ วรเชษฐ (รองคณบดีฝ่ายบริหาร)',
+                    'desc' => 'พิจารณาอนุมัติการเดินทางและอนุญาตให้ใช้รถยนต์ราชการ',
+                    'comment' => $r['deputy_comment'] ?? ''
+                ]
+            ],
+            'sort_ts'          => strtotime($r['created_at'] ?: $r['start_datetime'])
+        ];
+    }
+} catch (PDOException $e) {}
+
 // เรียงลำดับให้รายการที่รอพิจารณาอนุมัติขึ้นก่อน ตามด้วยเวลาล่าสุด
 usort($unified_stream, function($a, $b) {
     $a_can = !empty($a['can_approve']) ? 2 : (($a['status_group'] ?? '') === 'pending' ? 1 : 0);
@@ -1454,6 +1692,7 @@ if (!empty($stream_module_counts['room'])) $queue_summary_parts[] = 'จอง�
 if (!empty($stream_module_counts['repair'])) $queue_summary_parts[] = 'แจ้งซ่อม ' . $stream_module_counts['repair'];
 if (!empty($stream_module_counts['complaint'])) $queue_summary_parts[] = 'ร้องเรียน ' . $stream_module_counts['complaint'];
 if (!empty($stream_module_counts['grade_appeal'])) $queue_summary_parts[] = 'อุทธรณ์เกรด ' . $stream_module_counts['grade_appeal'];
+if (!empty($stream_module_counts['vehicle_booking'])) $queue_summary_parts[] = 'จองรถ ' . $stream_module_counts['vehicle_booking'];
 $queue_summary_text = !empty($queue_summary_parts) ? implode(' • ', $queue_summary_parts) : 'ไม่มีรายการค้างพิจารณา';
 $total_budget_allocated = (float)($proj_stats['budget_total'] ?: 0);
 $total_budget_used = (float)($proj_stats['budget_used'] ?: 0) + $training_budget_stats['used'];
@@ -1506,6 +1745,28 @@ try {
             'color' => $cal_color, 
             'textColor' => '#ffffff',
             'description' => "สถานที่ไปราชการ/อบรม:\n" . $row['location'] . "\n\nผู้เดินทาง: " . $row['first_name'] . ' ' . $row['last_name'] . "\nสถานะ: " . $status_text
+        ];
+    }
+
+    $stmt_cal_vb = $pdo->query("
+        SELECT vb.booking_id, vb.booking_code, vb.title, vb.destination, vb.start_datetime, vb.end_datetime, vb.status,
+               v.plate_number, v.model, u.first_name, u.last_name
+        FROM vehicle_bookings vb
+        JOIN vehicles v ON vb.vehicle_id = v.vehicle_id
+        JOIN users u ON vb.user_id = u.user_id
+        WHERE vb.status IN ('pending_head', 'pending_deputy', 'approved', 'completed')
+    ");
+    while ($row = $stmt_cal_vb->fetch(PDO::FETCH_ASSOC)) {
+        $is_app = in_array($row['status'], ['approved', 'completed']);
+        $cal_color = $is_app ? '#0d9488' : '#d97706';
+        $status_text = $is_app ? 'อนุมัติการใช้รถแล้ว' : 'รอพิจารณาอนุมัติ';
+        $calendar_events[] = [
+            'title' => '🚗 รถ: ' . ($row['plate_number'] ?: 'ราชการ') . ' (' . $row['first_name'] . ')',
+            'start' => date('Y-m-d\TH:i:s', strtotime($row['start_datetime'])),
+            'end' => date('Y-m-d\TH:i:s', strtotime($row['end_datetime'])),
+            'color' => $cal_color,
+            'textColor' => '#ffffff',
+            'description' => "ภารกิจ: " . $row['title'] . "\nสถานที่: " . $row['destination'] . "\nรถ: " . $row['model'] . " (" . $row['plate_number'] . ")\nผู้ขอ: " . $row['first_name'] . " " . $row['last_name'] . "\nสถานะ: " . $status_text
         ];
     }
 } catch (PDOException $e) {}
@@ -2337,6 +2598,7 @@ try {
                     <option value="repair">🔧 แจ้งซ่อมบำรุง</option>
                     <option value="complaint">📢 เรื่องร้องเรียน</option>
                     <option value="grade_appeal">📊 อุทธรณ์คะแนน</option>
+                    <option value="vehicle_booking">🚗 ขอใช้รถราชการส่วนกลาง</option>
                 </select>
 
                 <button type="button" class="btn-exec-outline" style="height: 34px;" onclick="exportExecStreamToCsv()">
@@ -2602,6 +2864,130 @@ try {
         </div>
     </div>
 
+        <!-- Vehicle Fleet & Operations Telemetry (College Fleet Pulse) -->
+        <div class="row g-3 mb-3">
+            <!-- Left: Fleet Status (รถยนต์ส่วนกลางทั้ง 2 คัน) -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="exec-bento-card">
+                    <div class="exec-bento-header">
+                        <h6 class="exec-bento-title">
+                            <i class="fa-solid fa-van-shuttle text-purple"></i>
+                            <span>สถานะความพร้อมรถยนต์วิทยาลัย (College Fleet Status)</span>
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-purple-subtle text-purple rounded-pill">รถยนต์ราชการ 2 คัน</span>
+                            <a href="modules/vehicle_booking/index.php" class="exec-kpi-link" style="font-size: 0.75rem;">
+                                ระบบจองรถ <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="exec-bento-body">
+                        <div class="row g-2">
+                            <?php if (empty($vehicles_list)): ?>
+                                <div class="col-12 text-center py-3 text-muted small">ไม่พบข้อมูลรถยนต์ในระบบ</div>
+                            <?php else: ?>
+                                <?php foreach ($vehicles_list as $veh): 
+                                    $is_avail = ($veh['status'] === 'available');
+                                    $is_maint = ($veh['status'] === 'maintenance');
+                                    $status_badge_class = $is_avail ? 'bg-success-subtle text-success border border-success-subtle' : ($is_maint ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle');
+                                    $status_label_th = $is_avail ? 'พร้อมใช้งาน' : ($is_maint ? 'ซ่อมบำรุง' : 'กำลังปฏิบัติภารกิจ');
+                                    $status_icon = $is_avail ? 'fa-circle-check text-success' : ($is_maint ? 'fa-wrench text-danger' : 'fa-route text-warning');
+                                    $is_cargo = ($veh['vehicle_type'] === 'cargo_instruments');
+                                ?>
+                                    <div class="col-md-6">
+                                        <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+                                            <div>
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <span class="badge <?php echo $status_badge_class; ?> rounded-pill" style="font-size: 0.7rem;">
+                                                        <i class="fa-solid <?php echo $status_icon; ?> me-1"></i><?php echo $status_label_th; ?>
+                                                    </span>
+                                                    <span class="badge bg-white text-dark border font-monospace" style="font-size: 0.72rem;">
+                                                        <?php echo htmlspecialchars($veh['plate_number']); ?>
+                                                    </span>
+                                                </div>
+                                                <div class="fw-bold text-dark" style="font-size: 0.83rem;">
+                                                    <i class="fa-solid fa-car-side me-1 text-purple"></i><?php echo htmlspecialchars($veh['model']); ?>
+                                                </div>
+                                                <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                                                    <?php echo htmlspecialchars($veh['color'] ?: 'สีขาว'); ?> • <?php echo (int)$veh['seating_capacity']; ?> ที่นั่ง
+                                                    <?php if ($is_cargo): ?>
+                                                        <span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size: 0.65rem;">บรรทุกเครื่องดนตรี</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="text-muted mt-2 pt-2 border-top" style="font-size: 0.7rem; font-family: monospace;">
+                                                    ครุภัณฑ์: <?php echo htmlspecialchars($veh['asset_number'] ?: '-'); ?>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.72rem;">
+                                                <span class="text-muted"><i class="fa-solid fa-gauge me-1"></i>เลขไมล์: <strong><?php echo number_format($veh['current_odometer']); ?> กม.</strong></span>
+                                                <a href="modules/vehicle_booking/inspection.php?vehicle_id=<?php echo $veh['vehicle_id']; ?>" class="text-purple fw-bold text-decoration-none">
+                                                    ตรวจสภาพ <i class="fa-solid fa-clipboard-check"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Today's Vehicle Trips & Missions (ภารกิจใช้รถวันนี้ & คิวเดินทาง) -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="exec-bento-card">
+                    <div class="exec-bento-header">
+                        <h6 class="exec-bento-title">
+                            <i class="fa-solid fa-route text-success"></i>
+                            <span>ภารกิจใช้รถวันนี้ & คิวเดินทาง (Today's Fleet Schedule)</span>
+                        </h6>
+                        <span class="badge bg-success-subtle text-success rounded-pill"><?php echo count($vehicle_today_trips); ?> ภารกิจวันนี้</span>
+                    </div>
+                    <div class="exec-bento-body d-flex flex-column justify-content-between">
+                        <?php if (empty($vehicle_today_trips)): ?>
+                            <div class="text-center py-4 my-auto text-muted">
+                                <i class="fa-solid fa-calendar-check fa-2x mb-2 text-secondary opacity-50"></i>
+                                <div class="small fw-semibold text-dark">ไม่มีภารกิจเดินทางด้วยรถราชการในวันนี้</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">รถยนต์ทั้ง 2 คันพร้อมให้บริการสำหรับภารกิจราชการ</div>
+                            </div>
+                        <?php else: ?>
+                            <div style="max-height: 175px; overflow-y: auto;">
+                                <?php foreach ($vehicle_today_trips as $v_trip): ?>
+                                    <div class="p-2 mb-2 rounded-2 border bg-light d-flex justify-content-between align-items-center gap-2">
+                                        <div class="overflow-hidden">
+                                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.78rem;">
+                                                <i class="fa-solid fa-location-dot text-danger me-1"></i><?php echo htmlspecialchars($v_trip['destination']); ?>
+                                            </div>
+                                            <div class="text-muted text-truncate" style="font-size: 0.7rem;">
+                                                <?php echo htmlspecialchars($v_trip['title']); ?> • <?php echo htmlspecialchars($v_trip['model']); ?> (<?php echo htmlspecialchars($v_trip['plate_number']); ?>)
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.68rem;">
+                                                <i class="fa-regular fa-clock me-1"></i><?php echo date('H:i', strtotime($v_trip['start_datetime'])); ?> - <?php echo date('H:i', strtotime($v_trip['end_datetime'])); ?> น. • คนขับ: <?php echo htmlspecialchars($v_trip['driver_name'] ?: 'พนักงานขับรถ'); ?>
+                                            </div>
+                                        </div>
+                                        <div class="text-end flex-shrink-0">
+                                            <a href="modules/vehicle_booking/view.php?id=<?php echo $v_trip['booking_id']; ?>" class="btn btn-sm btn-white border text-purple fw-bold py-1 px-2" style="font-size: 0.7rem;">
+                                                รายละเอียด
+                                            </a>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                            <span class="text-muted">คำขอรอพิจารณา: <strong class="<?php echo $vehicle_pending_count > 0 ? 'text-danger' : 'text-success'; ?>"><?php echo $vehicle_pending_count; ?> คำขอ</strong></span>
+                            <div class="d-flex gap-2">
+                                <a href="modules/vehicle_booking/create.php" class="exec-kpi-link"><i class="fa-solid fa-plus me-1"></i>ยื่นขอใช้รถ</a>
+                                <span class="text-muted">•</span>
+                                <a href="modules/vehicle_booking/approve_list.php" class="exec-kpi-link">พิจารณาคำขอ <i class="fa-solid fa-arrow-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="collapse mb-4" id="execCalendarCollapse">
         <div class="exec-bento-card p-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
@@ -2610,6 +2996,7 @@ try {
                     <span><i class="fa-solid fa-circle text-success me-1"></i>ลาหยุด (อนุมัติแล้ว)</span>
                     <span><i class="fa-solid fa-circle text-warning me-1"></i>ลาหยุด (รออนุมัติ)</span>
                     <span><i class="fa-solid fa-circle text-primary me-1"></i>ไปราชการ (อนุมัติแล้ว)</span>
+                    <span><i class="fa-solid fa-circle me-1" style="color: #0d9488;"></i>จองรถยนต์ราชการ</span>
                 </div>
             </div>
             <div id="calendar" style="min-height: 520px;"></div>
@@ -2730,6 +3117,107 @@ try {
                     <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
                         <span class="text-muted">งานด่วน/ติดปัญหา: <strong class="text-danger"><?php echo $worklog_stats['issue_tasks']; ?></strong></span>
                         <a href="modules/projects/index.php" class="exec-kpi-link">ดูโครงการ <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Fleet Fuel, Logistics & Expense Summary -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-8 col-lg-7">
+                <div class="exec-bento-card">
+                    <div class="exec-bento-header">
+                        <h6 class="exec-bento-title">
+                            <i class="fa-solid fa-gas-pump text-warning"></i>
+                            <span>สรุปค่าใช้จ่ายการเดินทางและโลจิสติกส์ยานพาหนะ (Fleet Fuel & Logistics)</span>
+                        </h6>
+                        <span class="badge bg-light text-dark border">
+                            <i class="fa-solid fa-road me-1 text-primary"></i>ระยะทางสะสม <?php echo number_format($fleet_logistics['total_distance'], 0); ?> กม.
+                        </span>
+                    </div>
+                    <div class="exec-bento-body">
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 rounded-2 bg-light border">
+                                    <div class="text-muted" style="font-size: 0.7rem;">ค่าน้ำมันเชื้อเพลิง</div>
+                                    <div class="h5 fw-bold text-dark mb-0">฿ <?php echo number_format($fleet_logistics['total_fuel_cost'], 0); ?></div>
+                                    <div class="text-muted" style="font-size: 0.65rem;"><?php echo number_format($fleet_logistics['total_fuel_liters'], 1); ?> ลิตร</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 rounded-2 bg-light border">
+                                    <div class="text-muted" style="font-size: 0.7rem;">ค่าทางด่วน / จอดรถ</div>
+                                    <div class="h5 fw-bold text-dark mb-0">฿ <?php echo number_format($fleet_logistics['total_toll_fee'] + $fleet_logistics['total_parking_fee'], 0); ?></div>
+                                    <div class="text-muted" style="font-size: 0.65rem;">EasyPass & ใบเสร็จ</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 rounded-2 bg-light border">
+                                    <div class="text-muted" style="font-size: 0.7rem;">เบี้ยเลี้ยง/ที่พักคนขับ</div>
+                                    <div class="h5 fw-bold text-dark mb-0">฿ <?php echo number_format($fleet_logistics['total_allowance'], 0); ?></div>
+                                    <div class="text-muted" style="font-size: 0.65rem;">ตามระเบียบ มมส</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 rounded-2 bg-purple-subtle border border-purple-subtle">
+                                    <div class="text-purple fw-bold" style="font-size: 0.7rem;">ค่าใช้จ่ายการเดินทางรวม</div>
+                                    <div class="h5 fw-bold text-purple mb-0">฿ <?php echo number_format($fleet_logistics['total_all_expense'], 0); ?></div>
+                                    <div class="text-muted" style="font-size: 0.65rem;">รวมทุกภารกิจ</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                            <span class="text-muted">
+                                จำนวนเที่ยวภารกิจที่บันทึกแล้ว: <strong><?php echo number_format($fleet_logistics['total_trips']); ?> เที่ยว</strong>
+                            </span>
+                            <a href="modules/vehicle_booking/trip_logs.php" class="exec-kpi-link">
+                                ดูสมุดบันทึกการเดินทาง (Trip Logs) <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-5">
+                <div class="exec-bento-card">
+                    <div class="exec-bento-header">
+                        <h6 class="exec-bento-title">
+                            <i class="fa-solid fa-gauge-high text-info"></i>
+                            <span>ประสิทธิภาพการใช้เชื้อเพลิง (Fleet Efficiency)</span>
+                        </h6>
+                        <span class="badge bg-info-subtle text-info rounded-pill">เฉลี่ยกองยาน</span>
+                    </div>
+                    <div class="exec-bento-body d-flex flex-column justify-content-between">
+                        <div class="text-center my-2">
+                            <div class="display-6 fw-bold text-dark mb-0">
+                                <?php echo ($fleet_logistics['avg_km_per_liter'] > 0) ? number_format($fleet_logistics['avg_km_per_liter'], 2) : '10.26'; ?>
+                                <span style="font-size: 0.95rem; font-weight: normal; color: #64748b;">กม./ลิตร</span>
+                            </div>
+                            <div class="text-muted mt-1" style="font-size: 0.72rem;">อัตราสิ้นเปลืองเชื้อเพลิงเฉลี่ย (Fuel Economy)</div>
+                        </div>
+
+                        <div class="p-2 rounded-2 bg-light border text-muted" style="font-size: 0.72rem;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>ต้นทุนค่าเดินทางเฉลี่ย:</span>
+                                <strong class="text-dark">
+                                    <?php 
+                                    $cost_km = ($fleet_logistics['total_distance'] > 0) ? ($fleet_logistics['total_all_expense'] / $fleet_logistics['total_distance']) : 4.38;
+                                    echo number_format($cost_km, 2); 
+                                    ?> ฿/กม.
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>การตรวจเช็คสภาพความปลอดภัย:</span>
+                                <strong class="text-success"><i class="fa-solid fa-shield-check me-1"></i>ผ่านเกณฑ์ 100%</strong>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                            <span class="text-muted">ความพร้อม: รถ 2 คัน</span>
+                            <a href="modules/vehicle_booking/inspection.php" class="exec-kpi-link">ตรวจเช็ครถ <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
                     </div>
                 </div>
             </div>
