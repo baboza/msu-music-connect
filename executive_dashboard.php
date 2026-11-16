@@ -2283,8 +2283,6 @@ try {
         .exec-perspective-container::-webkit-scrollbar {
             display: none !important;
         }
-            padding-bottom: 4px;
-        }
         .exec-perspective-tabs {
             padding: 3px;
             gap: 4px;
@@ -2329,6 +2327,9 @@ try {
             padding: 5px 9px !important;
             font-size: 0.73rem !important;
         }
+    }
+
+    @media (max-width: 575.98px) {
         #execInspectDrawer {
             width: 100% !important;
         }
@@ -3229,7 +3230,7 @@ try {
 <!-- =========================================================
      SLIDE-OVER INSPECTION & APPROVAL DRAWER (Enterprise Offcanvas)
      ========================================================= -->
-<div class="offcanvas offcanvas-end bg-white" tabindex="-1" id="execInspectDrawer" aria-labelledby="execInspectDrawerLabel">
+<div class="offcanvas offcanvas-end bg-white" tabindex="-1" id="execInspectDrawer" aria-labelledby="execInspectDrawerLabel" style="width: 540px !important; max-width: 100vw; border-left: 1px solid #cbd5e1 !important; box-shadow: -16px 0 40px -8px rgba(15, 23, 42, 0.16) !important;">
     
     <!-- Drawer Header -->
     <div class="offcanvas-header border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
