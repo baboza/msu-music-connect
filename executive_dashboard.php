@@ -2622,13 +2622,12 @@ try {
                         <th style="min-width: 260px;">หัวข้อ / รายละเอียด</th>
                         <th style="width: 145px;">วัน-เวลา / กำหนดการ</th>
                         <th style="width: 190px;" class="text-center">สถานะการอนุมัติ</th>
-                        <th style="width: 115px;" class="text-center">ดำเนินการ</th>
                     </tr>
                 </thead>
                 <tbody id="execUnifiedTbody">
                     <?php if (empty($unified_stream)): ?>
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fa-solid fa-inbox fa-2x mb-2 opacity-50"></i>
                                 <p class="mb-0 small">ยังไม่มีรายการความเคลื่อนไหวในระบบ</p>
                             </td>
@@ -2707,11 +2706,6 @@ try {
                                             <span><?php echo htmlspecialchars($row['status_label']); ?></span>
                                         </span>
                                     <?php endif; ?>
-                                </td>
-                                <td class="text-center" onclick="event.stopPropagation();">
-                                    <button type="button" class="btn-table-action <?php echo !empty($row['can_approve']) ? 'border-purple text-purple fw-bold' : ''; ?>" onclick="openExecInspectDrawer(<?php echo $idx; ?>, event)">
-                                        <?php echo htmlspecialchars($row['action_label']); ?>
-                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
